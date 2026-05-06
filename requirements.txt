@@ -1,0 +1,17 @@
+python-telegram-bot==22.7
+mss==10.2.0
+Pillow
+psutil
+pyperclip
+python-dotenv
+dotenv
+opencv-python
+wmi
+pywin32
+pytest
+pytest-mock
+numpy
+pytest-asyncio
+pycaw
+pynput
+rapidfuzz
