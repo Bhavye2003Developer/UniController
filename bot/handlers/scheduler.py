@@ -70,7 +70,7 @@ async def schedule_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     if cmd_name == 'exec':
         async def _job(ctx):
-            result = commandExecutor.run(cmd_rest)
+            result = await asyncio.to_thread(commandExecutor.run, cmd_rest)
             await ctx.bot.send_message(
                 chat_id=chat_id,
                 text=f"<b>SCHEDULED</b>  <code>/exec {' '.join(cmd_rest)}</code>\n<pre>{result}</pre>",
@@ -129,7 +129,7 @@ async def wake_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     if not context.args:
-        result = subprocess.run(['arp', '-a'], capture_output=True, text=True)
+        result = await asyncio.to_thread(subprocess.run, ['arp', '-a'], capture_output=True, text=True)
         await update.message.reply_text(
             f"<b>ARP TABLE</b>\n<pre>{result.stdout[:3500]}</pre>\n"
             f"usage: /wake &lt;mac-address&gt;",

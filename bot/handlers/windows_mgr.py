@@ -1,3 +1,5 @@
+import asyncio
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
@@ -11,11 +13,12 @@ _handles: dict[str, int] = {}
 async def windows_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    wins = [(hwnd, title) for hwnd, title in list_open_windows()][:15]
+    status = await update.message.reply_text("...")
+    wins = [(hwnd, title) for hwnd, title in await asyncio.to_thread(list_open_windows)][:15]
     _handles.clear()
 
     if not wins:
-        await update.message.reply_text("no open windows found.")
+        await status.edit_text("no open windows found.")
         return
 
     lines = [f"<b>WINDOWS</b>  ({len(wins)})\n<pre>"]
@@ -30,7 +33,7 @@ async def windows_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         ])
     lines.append("</pre>")
 
-    await update.message.reply_text(
+    await status.edit_text(
         "\n".join(lines),
         parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(keyboard)
@@ -51,7 +54,7 @@ async def wm_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     action_map = {'focus': 'focus', 'min': 'minimize', 'close': 'close'}
     action = action_map.get(action_key, 'focus')
     try:
-        window_action(hwnd, action)
+        await asyncio.to_thread(window_action, hwnd, action)
         label = {'focus': 'focused', 'minimize': 'minimized', 'close': 'closed'}.get(action, 'done')
         await query.answer(label)
     except Exception as e:

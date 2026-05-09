@@ -130,7 +130,7 @@ async def kill_pid_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def lock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    lock_screen()
+    await asyncio.to_thread(lock_screen)
     await update.message.reply_text("screen locked.")
 
 
@@ -184,7 +184,7 @@ async def temp_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def activewindow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    info = get_active_window()
+    info = await asyncio.to_thread(get_active_window)
     text = (
         "<b>ACTIVE WINDOW</b>\n\n"
         f"<b>{info['title'][:50]}</b>\n"
@@ -196,7 +196,7 @@ async def activewindow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def powerplan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    plans = get_powerplans()
+    plans = await asyncio.to_thread(get_powerplans)
     if not context.args:
         lines = ["<b>POWER PLANS</b>\n<pre>"]
         for name, _, active in plans:
@@ -216,7 +216,7 @@ async def powerplan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f"no plan matching '{query}'")
         return
     try:
-        set_powerplan(match[1])
+        await asyncio.to_thread(set_powerplan, match[1])
         await update.message.reply_text(f"power plan: <b>{match[0]}</b>", parse_mode=ParseMode.HTML)
     except Exception as e:
         await update.message.reply_text(f"err: {e}")

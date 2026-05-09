@@ -39,7 +39,7 @@ async def media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     try:
-        vol = get_volume()
+        vol = await asyncio.to_thread(get_volume)
     except Exception:
         vol = None
     await update.message.reply_text(
@@ -56,9 +56,9 @@ async def media_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if action is None:
         return
     try:
-        press_media_key(action)
+        await asyncio.to_thread(press_media_key, action)
         try:
-            vol = get_volume()
+            vol = await asyncio.to_thread(get_volume)
         except Exception:
             vol = None
         await query.edit_message_text(

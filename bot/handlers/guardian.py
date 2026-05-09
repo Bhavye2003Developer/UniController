@@ -15,7 +15,7 @@ _pending_panic: set[int] = set()
 async def snap(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    photo = capture_webcam()
+    photo = await asyncio.to_thread(capture_webcam)
     if photo is None:
         await update.message.reply_text("no webcam found or capture failed.")
         return
@@ -82,7 +82,7 @@ async def panic_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def _execute_panic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    photo = capture_webcam()
+    photo = await asyncio.to_thread(capture_webcam)
     if photo:
         await update.message.reply_photo(photo=photo, caption="webcam snap.")
     else:
@@ -91,12 +91,12 @@ async def _execute_panic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text("locking screen and disabling Wi-Fi...")
 
     try:
-        lock_screen()
+        await asyncio.to_thread(lock_screen)
     except Exception as e:
         await update.message.reply_text(f"lock err: {e}")
 
     try:
-        disable_wifi()
+        await asyncio.to_thread(disable_wifi)
     except Exception as e:
         await update.message.reply_text(f"wifi err: {e}")
 

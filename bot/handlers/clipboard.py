@@ -1,3 +1,4 @@
+import asyncio
 import collections
 import threading
 import time
@@ -51,7 +52,7 @@ async def clip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     sub = args[0].lower() if args else 'get'
 
     if sub == 'get':
-        content = pyperclip.paste()
+        content = await asyncio.to_thread(pyperclip.paste)
         if not content:
             await update.message.reply_text("clipboard is empty.")
         else:
@@ -62,12 +63,12 @@ async def clip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     elif sub == 'set':
         if len(args) > 1:
-            pyperclip.copy(' '.join(args[1:]))
+            await asyncio.to_thread(pyperclip.copy, ' '.join(args[1:]))
             await update.message.reply_text("copied.")
             return
         reply = update.message.reply_to_message
         if reply and reply.text:
-            pyperclip.copy(reply.text)
+            await asyncio.to_thread(pyperclip.copy, reply.text)
             await update.message.reply_text("copied.")
         else:
             await update.message.reply_text(

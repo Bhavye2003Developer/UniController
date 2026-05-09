@@ -1,3 +1,4 @@
+import asyncio
 import webbrowser
 
 from telegram import Update
@@ -16,42 +17,42 @@ async def openurl_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     url = context.args[0]
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
-    webbrowser.open(url)
+    await asyncio.to_thread(webbrowser.open, url)
     await update.message.reply_text(f"opened: {url}")
 
 
 async def next_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    press_key('right')
-    await update.message.reply_text("→ next")
+    await asyncio.to_thread(press_key, 'right')
+    await update.message.reply_text("next")
 
 
 async def prev_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    press_key('left')
-    await update.message.reply_text("← prev")
+    await asyncio.to_thread(press_key, 'left')
+    await update.message.reply_text("prev")
 
 
 async def fullscreen_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    press_key('f5')
+    await asyncio.to_thread(press_key, 'f5')
     await update.message.reply_text("fullscreen (F5)")
 
 
 async def escape_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    press_key('escape')
+    await asyncio.to_thread(press_key, 'escape')
     await update.message.reply_text("esc")
 
 
 async def closetab_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    hotkey('ctrl', 'w')
+    await asyncio.to_thread(hotkey, 'ctrl', 'w')
     await update.message.reply_text("tab closed (ctrl+w)")
 
 

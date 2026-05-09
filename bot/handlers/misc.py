@@ -23,7 +23,7 @@ async def volume(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     if not context.args:
-        vol = get_volume()
+        vol = await asyncio.to_thread(get_volume)
         await update.message.reply_text(
             f"vol: <b>{vol:.0f}%</b>  {bar(vol)}",
             parse_mode=ParseMode.HTML
@@ -33,16 +33,18 @@ async def volume(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     arg = context.args[0].lower()
     try:
         if arg == 'up':
-            set_volume(min(100, int(get_volume()) + 10))
+            cur = await asyncio.to_thread(get_volume)
+            await asyncio.to_thread(set_volume, min(100, int(cur) + 10))
         elif arg == 'down':
-            set_volume(max(0, int(get_volume()) - 10))
+            cur = await asyncio.to_thread(get_volume)
+            await asyncio.to_thread(set_volume, max(0, int(cur) - 10))
         elif arg == 'mute':
-            mute_toggle()
+            await asyncio.to_thread(mute_toggle)
             await update.message.reply_text("muted.")
             return
         else:
-            set_volume(int(arg))
-        vol = get_volume()
+            await asyncio.to_thread(set_volume, int(arg))
+        vol = await asyncio.to_thread(get_volume)
         await update.message.reply_text(
             f"vol: <b>{vol:.0f}%</b>  {bar(vol)}",
             parse_mode=ParseMode.HTML
@@ -61,24 +63,25 @@ async def launch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     query = ' '.join(context.args)
-    apps = list_apps()
+    status = await update.message.reply_text("searching apps...")
+    apps = await asyncio.to_thread(list_apps)
     if not apps:
-        await update.message.reply_text("no installed apps found.")
+        await status.edit_text("no installed apps found.")
         return
 
     names = [a[0] for a in apps]
     match = process.extractOne(query, names, scorer=fuzz.WRatio)
     if match is None or match[1] < 40:
-        await update.message.reply_text(f"no app matching '{query}'")
+        await status.edit_text(f"no app matching '{query}'")
         return
 
     matched_name, score, idx = match
     app_path = apps[idx][1]
     try:
-        launch_app(app_path)
-        await update.message.reply_text(f"launched: <b>{matched_name}</b>", parse_mode=ParseMode.HTML)
+        await asyncio.to_thread(launch_app, app_path)
+        await status.edit_text(f"launched: <b>{matched_name}</b>", parse_mode=ParseMode.HTML)
     except Exception as e:
-        await update.message.reply_text(f"err: {e}")
+        await status.edit_text(f"err: {e}")
 
 
 async def focus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
