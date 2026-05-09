@@ -29,87 +29,89 @@ def terminal_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-HELP_TEXT = """<b>UNICONTROLLER</b>
+HELP_TEXT = """🖥 <b>UniController</b>
 
-<b>CORE</b>
-/exec &lt;cmd&gt; - run shell command
-/screenshot - capture screen(s)
-/runp - interactive python REPL
+<b>🔧 Core</b>
+/exec &lt;cmd&gt; - run any shell command
+/screenshot - capture the screen
+/runp - interactive Python REPL
 
-<b>SYSTEM</b>
-/sysinfo - cpu, ram, disk, uptime
-/ps - processes by cpu
-/kill &lt;pid|name&gt; - kill process
-/lock - lock screen
-/shutdown - power off
-/restart - reboot
-/activewindow - focused window info
-/powerplan - power plan control
-/windows - window manager
+<b>📊 System</b>
+/sysinfo - CPU, RAM, disk, uptime
+/ps - running processes + kill buttons
+/kill &lt;pid|name&gt; - kill a process
+/lock - lock the screen
+/shutdown - shut down PC
+/restart - restart PC
+/activewindow - currently focused window
+/powerplan - view or switch power plan
+/windows - list and manage open windows
 
-<b>FILES</b>
-/files - browse filesystem
-/download - file browser or send file
-/upload - save file from chat
-/print - print doc (reply to file)
-/cleanup - scan and delete junk
+<b>📁 Files</b>
+/files - browse the filesystem
+/download - browse or send a file
+/upload - save a file from chat to PC
+/print - print a document (reply to file)
+/cleanup - scan and free up junk space
 /search &lt;pattern&gt; - search file contents
 
-<b>CLIPBOARD</b>
-/clip - get, set, or history
+<b>📋 Clipboard</b>
+/clip - read clipboard
+/clip set &lt;text&gt; - write to clipboard
+/clip history - last 10 items
 
-<b>MEDIA</b>
-/media - media control panel
-/volume - get or set volume
-/nowplaying - current track
+<b>🎵 Media</b>
+/media - play, pause, skip, volume panel
+/volume - get or set system volume
+/nowplaying - current track info
 
-<b>APPS</b>
-/launch &lt;name&gt; - open app by name
-/focus - block distractions
-/type &lt;text&gt; - type into active window
-/speedtest - internet speed
+<b>🚀 Apps</b>
+/launch &lt;name&gt; - open any app
+/focus &lt;min&gt; - block distractions for N minutes
+/type &lt;text&gt; - type text into active window
+/speedtest - internet speed test
 
-<b>SCHEDULER</b>
-/schedule &lt;time&gt; &lt;cmd&gt; - schedule a command
-/babysit &lt;cmd&gt; - watch a process
-/wake &lt;mac&gt; - wake-on-LAN
+<b>⏰ Scheduler</b>
+/schedule &lt;time&gt; &lt;cmd&gt; - run a command at a time
+/babysit &lt;cmd&gt; - run and notify when done
+/wake &lt;mac&gt; - send Wake-on-LAN packet
 
-<b>NETWORK</b>
+<b>🌐 Network</b>
 /netstat - active connections by process
 /lan - scan LAN for devices
 
-<b>REMOTE</b>
-/next - next slide
-/prev - prev slide
-/fullscreen - F5
-/escape - esc
-/openurl &lt;url&gt; - open in browser
-/closetab - ctrl+w
+<b>🎮 Remote</b>
+/next /prev - arrow keys (slide nav)
+/fullscreen /escape - F5 / Esc
+/openurl &lt;url&gt; - open URL in browser
+/closetab - close current tab
 
-<b>NOTEPAD</b>
-/note &lt;text&gt; - add note
-/notes - list notes
+<b>📝 Notepad</b>
+/note &lt;text&gt; - save a note
+/notes - list all notes
 
-<b>WATCHERS</b>
-/watch &lt;rule&gt; - add watch rule
+<b>👁 Watchers</b>
+/watch &lt;rule&gt; - monitor cpu, ram, disk, process, file
 /watches - list active rules
-/unwatch &lt;id&gt; - remove rule
+/unwatch &lt;id&gt; - remove a rule
 
-<b>REPORTS</b>
-/report - now, on HH:MM, or off
+<b>📈 Reports</b>
+/report now - instant snapshot
+/report on HH:MM - schedule daily report
+/report off - cancel daily report
 
-<b>TIMELAPSE</b>
-/timelapse &lt;duration&gt; - record screen GIF
-/stream - burst capture GIF
-/stage &lt;path&gt; - upload for offline access
+<b>🎬 Timelapse</b>
+/timelapse &lt;duration&gt; - record screen as GIF
+/stream - short burst GIF capture
+/stage &lt;path&gt; - upload file for offline access
 
-<b>DAEMON</b>
-/daemon - install, uninstall, or status
+<b>🛡 Guardian</b>
+/snap - take a webcam snapshot
+/guard on|off|status - motion + USB alerts
+/panic - snap, lock, disable Wi-Fi
 
-<b>GUARDIAN</b>
-/snap - webcam snapshot
-/guard - motion and USB alerts
-/panic - emergency lockdown"""
+<b>⚙️ Daemon</b>
+/daemon install|uninstall|status - auto-start on login"""
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -122,7 +124,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     await update.message.reply_text(
-        f"<code>ghost@pc</code>  online  hi {update.effective_user.first_name}\n/help for commands.",
+        f"👋 Hey <b>{update.effective_user.first_name}</b>, your PC is online!\n\n/help to see all commands.",
         parse_mode=ParseMode.HTML
     )
 

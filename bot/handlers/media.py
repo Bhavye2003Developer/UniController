@@ -14,9 +14,9 @@ _MEDIA_KEYBOARD = InlineKeyboardMarkup([
         InlineKeyboardButton("⏭",   callback_data="media_next"),
     ],
     [
-        InlineKeyboardButton("vol-", callback_data="media_vol_down"),
-        InlineKeyboardButton("mute", callback_data="media_mute"),
-        InlineKeyboardButton("vol+", callback_data="media_vol_up"),
+        InlineKeyboardButton("🔉",  callback_data="media_vol_down"),
+        InlineKeyboardButton("🔇",  callback_data="media_mute"),
+        InlineKeyboardButton("🔊",  callback_data="media_vol_up"),
     ],
 ])
 
@@ -31,8 +31,8 @@ _ACTION_MAP = {
 
 
 def _caption(vol: float | None = None) -> str:
-    vol_str = f"  vol: {vol:.0f}%" if vol is not None else ""
-    return f"<b>MEDIA</b>{vol_str}"
+    vol_str = f"  🔊 <b>{vol:.0f}%</b>" if vol is not None else ""
+    return f"🎵 <b>Media Control</b>{vol_str}"
 
 
 async def media(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -65,14 +65,14 @@ async def media_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             _caption(vol), parse_mode=ParseMode.HTML, reply_markup=_MEDIA_KEYBOARD
         )
     except Exception as e:
-        await query.answer(f"err: {e}", show_alert=True)
+        await query.answer(f"Error: {e}", show_alert=True)
 
 
 async def nowplaying(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     info = await asyncio.to_thread(get_nowplaying)
-    await update.message.reply_text(f"<code>{info}</code>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"🎵 {info}", parse_mode=ParseMode.HTML)
 
 
 def register_media_handlers(app) -> None:

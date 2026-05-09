@@ -1,7 +1,5 @@
 import asyncio
 import datetime
-import time
-from pathlib import Path
 
 import psutil
 from telegram import Update
@@ -20,23 +18,18 @@ def _build_report() -> str:
     disk = psutil.disk_usage('C:\\')
     try:
         bat = psutil.sensors_battery()
-        bat_line = (
-            f"bat   {bar(bat.percent)}  {bat.percent:.0f}%"
-            f"{'  charging' if bat.power_plugged else ''}"
-        ) if bat else None
     except Exception:
-        bat_line = None
+        bat = None
 
     lines = [
-        f"<b>REPORT</b>  {datetime.date.today()}",
-        "<pre>",
-        f"cpu   {bar(cpu)}  {cpu:.0f}%",
-        f"ram   {bar(ram.percent)}  {ram.percent:.0f}%  {ram.used//1024**3:.1f}/{ram.total//1024**3:.1f} GB",
-        f"disk  {bar(disk.percent)}  {disk.percent:.0f}%  {disk.free//1024**3:.1f} GB free",
+        f"📊 <b>Report</b>  {datetime.date.today()}\n",
+        f"💻 CPU   <b>{cpu:.0f}%</b>  {bar(cpu)}",
+        f"🧠 RAM   <b>{ram.percent:.0f}%</b>  {bar(ram.percent)}  {ram.used//1024**3}/{ram.total//1024**3} GB",
+        f"💾 Disk  <b>{disk.percent:.0f}%</b>  {bar(disk.percent)}  {disk.free//1024**3} GB free",
     ]
-    if bat_line:
-        lines.append(bat_line)
-    lines.append("</pre>")
+    if bat:
+        plug = "  🔌 charging" if bat.power_plugged else ""
+        lines.append(f"🔋 Bat   <b>{bat.percent:.0f}%</b>  {bar(bat.percent)}{plug}")
     return "\n".join(lines)
 
 
@@ -71,7 +64,8 @@ async def report_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         context.job_queue.run_daily(_daily, time=schedule_time, name=_REPORT_JOB)
         await update.message.reply_text(
-            f"daily report scheduled at {schedule_time.strftime('%H:%M')}."
+            f"📊 Daily report scheduled at <b>{schedule_time.strftime('%H:%M')}</b>",
+            parse_mode=ParseMode.HTML
         )
         return
 
@@ -81,11 +75,11 @@ async def report_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             job.schedule_removal()
             removed += 1
         await update.message.reply_text(
-            "daily report off." if removed else "no daily report was scheduled."
+            "📊 Daily report cancelled." if removed else "No daily report was scheduled."
         )
         return
 
-    await update.message.reply_text("usage: /report now|on HH:MM|off")
+    await update.message.reply_text("usage: /report now | on HH:MM | off")
 
 
 async def send_session_summary(bot, chat_id: int, idle_secs: float) -> None:
@@ -96,11 +90,10 @@ async def send_session_summary(bot, chat_id: int, idle_secs: float) -> None:
     h, rem = divmod(int(idle_secs), 3600)
     m = rem // 60
     away = f"{h}h {m}m" if h else f"{m}m"
-    lines = [f"<b>BACK</b>  away {away}\n<pre>"]
+    lines = [f"👋 <b>Welcome back!</b>  (away {away})\n"]
     for ts, text in events:
         t = datetime.datetime.fromtimestamp(ts).strftime('%H:%M')
         lines.append(f"  {t}  {text}")
-    lines.append("</pre>")
     await bot.send_message(chat_id=chat_id, text="\n".join(lines), parse_mode=ParseMode.HTML)
 
 

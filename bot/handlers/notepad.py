@@ -26,11 +26,10 @@ async def note_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     if not context.args:
         await update.message.reply_text(
-            "<b>NOTE</b>\n<pre>"
-            "/note &lt;text&gt;       add note\n"
-            "/note clear &lt;n&gt;   delete note #n\n"
-            "/notes             list all"
-            "</pre>",
+            "📝 <b>Notes</b>\n\n"
+            "/note &lt;text&gt; — add a note\n"
+            "/note clear &lt;n&gt; — delete note #n\n"
+            "/notes — list all notes",
             parse_mode=ParseMode.HTML
         )
         return
@@ -42,23 +41,23 @@ async def note_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         try:
             n = int(context.args[1]) - 1
         except ValueError:
-            await update.message.reply_text("provide a note number.")
+            await update.message.reply_text("❌ Provide a note number.")
             return
         lines = _load()
         if n < 0 or n >= len(lines):
-            await update.message.reply_text("note not found.")
+            await update.message.reply_text("❌ Note not found.")
             return
-        removed = lines.pop(n)
+        lines.pop(n)
         _save(lines)
-        await update.message.reply_text(f"deleted: <code>{removed[:60]}</code>", parse_mode=ParseMode.HTML)
+        await update.message.reply_text("🗑 Note deleted.")
         return
 
     text = ' '.join(context.args)
-    ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    ts = datetime.datetime.now().strftime('%b %d, %H:%M')
     lines = _load()
     lines.append(f"[{ts}] {text}")
     _save(lines)
-    await update.message.reply_text("noted.")
+    await update.message.reply_text("📝 Noted!")
 
 
 async def notes_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -66,14 +65,13 @@ async def notes_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     lines = _load()
     if not lines:
-        await update.message.reply_text("no notes. use /note &lt;text&gt;", parse_mode=ParseMode.HTML)
+        await update.message.reply_text("📝 No notes yet.\n\nUse /note &lt;text&gt; to add one.", parse_mode=ParseMode.HTML)
         return
     recent = lines[-20:]
-    body = "\n".join(f"{i+1:2}.  {l}" for i, l in enumerate(recent))
-    await update.message.reply_text(
-        f"<b>NOTES</b>  {len(lines)} entries\n<pre>{body}</pre>",
-        parse_mode=ParseMode.HTML
-    )
+    note_lines = [f"📝 <b>Notes</b>  ({len(lines)} total)\n"]
+    for i, l in enumerate(recent, 1):
+        note_lines.append(f"{i}. {l}")
+    await update.message.reply_text("\n".join(note_lines), parse_mode=ParseMode.HTML)
 
 
 def register_notepad_handlers(app) -> None:
