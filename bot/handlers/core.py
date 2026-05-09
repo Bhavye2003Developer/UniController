@@ -32,84 +32,85 @@ def terminal_keyboard() -> InlineKeyboardMarkup:
 HELP_TEXT = """<b>UNICONTROLLER</b>
 
 <b>CORE</b>
-<pre>/exec &lt;cmd&gt;            run shell command
-/screenshot [n|all]    capture screen(s)
-/runp                  interactive python REPL</pre>
+/exec &lt;cmd&gt; - run shell command
+/screenshot - capture screen(s)
+/runp - interactive python REPL
 
 <b>SYSTEM</b>
-<pre>/sysinfo               cpu · ram · disk · uptime
-/ps                    processes by cpu
-/kill &lt;pid|name&gt;       kill process
-/temp                  cpu temperatures
-/lock                  lock screen
-/shutdown · /restart   power control
-/activewindow          focused window info
-/powerplan [name]      power plan control
-/windows               window manager</pre>
+/sysinfo - cpu, ram, disk, uptime
+/ps - processes by cpu
+/kill &lt;pid|name&gt; - kill process
+/temp - cpu temperatures
+/lock - lock screen
+/shutdown - power off
+/restart - reboot
+/activewindow - focused window info
+/powerplan - power plan control
+/windows - window manager
 
 <b>FILES</b>
-<pre>/files                 browse filesystem
-/download [path]       file browser or send file
-/upload                save file from chat
-/print                 print doc (reply to file)
-/cleanup               scan and delete junk
-/search &lt;pat&gt; [path]   search file contents</pre>
+/files - browse filesystem
+/download - file browser or send file
+/upload - save file from chat
+/print - print doc (reply to file)
+/cleanup - scan and delete junk
+/search &lt;pattern&gt; - search file contents
 
 <b>CLIPBOARD</b>
-<pre>/clip get              read clipboard
-/clip set              write clipboard (reply)
-/clip history          last 10 items</pre>
+/clip - get, set, or history
 
 <b>MEDIA</b>
-<pre>/media                 media control panel
-/volume [0-100|up|down|mute]
-/nowplaying            current track</pre>
+/media - media control panel
+/volume - get or set volume
+/nowplaying - current track
 
 <b>APPS</b>
-<pre>/launch &lt;name&gt;         open app by name
-/focus [min]           block distractions
-/type &lt;text&gt;           type into active window
-/speedtest             internet speed</pre>
+/launch &lt;name&gt; - open app by name
+/focus - block distractions
+/type &lt;text&gt; - type into active window
+/speedtest - internet speed
 
 <b>SCHEDULER</b>
-<pre>/schedule &lt;time&gt; &lt;cmd&gt; schedule a command
-/babysit &lt;cmd&gt;         watch a process
-/wake &lt;mac&gt;            wake-on-LAN</pre>
+/schedule &lt;time&gt; &lt;cmd&gt; - schedule a command
+/babysit &lt;cmd&gt; - watch a process
+/wake &lt;mac&gt; - wake-on-LAN
 
 <b>NETWORK</b>
-<pre>/netstat               active connections by process
-/lan                   scan LAN for devices</pre>
+/netstat - active connections by process
+/lan - scan LAN for devices
 
 <b>REMOTE</b>
-<pre>/next · /prev          arrow keys
-/fullscreen · /escape  F5 / esc
-/openurl &lt;url&gt;         open in browser
-/closetab              ctrl+w</pre>
+/next - next slide
+/prev - prev slide
+/fullscreen - F5
+/escape - esc
+/openurl &lt;url&gt; - open in browser
+/closetab - ctrl+w
 
 <b>NOTEPAD</b>
-<pre>/note &lt;text&gt;           add note
-/notes                 list notes</pre>
+/note &lt;text&gt; - add note
+/notes - list notes
 
 <b>WATCHERS</b>
-<pre>/watch &lt;rule&gt;          add watch rule (cpu/ram/disk/process/file)
-/watches               list active rules
-/unwatch &lt;id&gt;          remove rule</pre>
+/watch &lt;rule&gt; - add watch rule
+/watches - list active rules
+/unwatch &lt;id&gt; - remove rule
 
 <b>REPORTS</b>
-<pre>/report now|on HH:MM|off</pre>
+/report - now, on HH:MM, or off
 
 <b>TIMELAPSE</b>
-<pre>/timelapse &lt;dur&gt; [interval=Xm]
-/stream [sec]          burst capture GIF
-/stage &lt;path&gt;          upload for offline access</pre>
+/timelapse &lt;duration&gt; - record screen GIF
+/stream - burst capture GIF
+/stage &lt;path&gt; - upload for offline access
 
 <b>DAEMON</b>
-<pre>/daemon install|uninstall|status</pre>
+/daemon - install, uninstall, or status
 
 <b>GUARDIAN</b>
-<pre>/snap                  webcam snapshot
-/guard on|off|status   motion and USB alerts
-/panic                 emergency lockdown</pre>"""
+/snap - webcam snapshot
+/guard - motion and USB alerts
+/panic - emergency lockdown"""
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
