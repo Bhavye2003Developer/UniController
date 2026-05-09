@@ -14,9 +14,11 @@ async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
     if not context.args:
         await update.message.reply_text(
-            "Usage: /search &lt;pattern&gt; [path]\n"
-            "Searches text files (py, js, txt, md, json…)\n"
-            "Default path: home directory",
+            "<b>SEARCH</b>\n<pre>"
+            "usage: /search &lt;pattern&gt; [path]\n"
+            "searches: py js ts txt md json yaml...\n"
+            "default path: home directory"
+            "</pre>",
             parse_mode=ParseMode.HTML
         )
         return
@@ -25,24 +27,33 @@ async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     root = Path(' '.join(context.args[1:])) if len(context.args) > 1 else Path.home()
 
     if not root.exists():
-        await update.message.reply_text(f"Path not found: {root}")
+        await update.message.reply_text(f"path not found: {root}")
         return
 
-    status = await update.message.reply_text(f"🔍 Searching <code>{pattern}</code> in <code>{root}</code>…", parse_mode=ParseMode.HTML)
+    status = await update.message.reply_text(
+        f"searching <code>{pattern}</code> in <code>{root}</code>...",
+        parse_mode=ParseMode.HTML
+    )
     results = await asyncio.to_thread(search_files, pattern, root, 15)
 
     if not results:
-        await status.edit_text(f"No results for <code>{pattern}</code>", parse_mode=ParseMode.HTML)
+        await status.edit_text(
+            f"no results for <code>{pattern}</code>", parse_mode=ParseMode.HTML
+        )
         return
 
-    lines = [f"🔍 <b>{len(results)} result(s)</b> for <code>{pattern}</code>:\n"]
+    lines = [
+        f"<b>SEARCH</b>  \"{pattern}\"  {len(results)} result(s)\n<pre>"
+    ]
     for fpath, lineno, line in results:
         try:
             rel = Path(fpath).relative_to(root)
         except ValueError:
             rel = Path(fpath)
-        safe_line = line.replace('<', '&lt;').replace('>', '&gt;')
-        lines.append(f"<code>{rel}:{lineno}</code>\n  <i>{safe_line}</i>\n")
+        safe = line.strip()[:70].replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        lines.append(f"{rel}:{lineno}")
+        lines.append(f"  {safe}")
+    lines.append("</pre>")
 
     await status.edit_text("\n".join(lines), parse_mode=ParseMode.HTML)
 

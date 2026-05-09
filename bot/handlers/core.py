@@ -29,94 +29,87 @@ def terminal_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-HELP_TEXT = """<b>UniController Commands</b>
+HELP_TEXT = """<b>UNICONTROLLER</b>
 
-<b>Core</b>
-/exec &lt;cmd&gt; — run shell command
-/screenshot [n|all] — capture screen / monitor n / all
-/runp — start Python REPL
+<b>CORE</b>
+<pre>/exec &lt;cmd&gt;            run shell command
+/screenshot [n|all]    capture screen(s)
+/runp                  interactive python REPL</pre>
 
-<b>System</b>
-/sysinfo — CPU, RAM, disk, uptime
-/ps — list processes
-/kill &lt;pid|name&gt; — kill process
-/temp — CPU temperatures
-/lock — lock screen
-/shutdown — shutdown PC
-/restart — restart PC
-/activewindow — active window + process info
-/powerplan [name] — show or switch power plan
-/windows — list open windows (focus/min/close)
+<b>SYSTEM</b>
+<pre>/sysinfo               cpu · ram · disk · uptime
+/ps                    processes by cpu
+/kill &lt;pid|name&gt;       kill process
+/temp                  cpu temperatures
+/lock                  lock screen
+/shutdown · /restart   power control
+/activewindow          focused window info
+/powerplan [name]      power plan control
+/windows               window manager</pre>
 
-<b>Files</b>
-/files — browse filesystem
-/download — file browser / send file to chat
-/upload — receive file from chat
-/print — print document (reply to file)
-/cleanup — scan and clean junk files
-/search &lt;pattern&gt; [path] — search file contents
+<b>FILES</b>
+<pre>/files                 browse filesystem
+/download [path]       file browser or send file
+/upload                save file from chat
+/print                 print doc (reply to file)
+/cleanup               scan and delete junk
+/search &lt;pat&gt; [path]   search file contents</pre>
 
-<b>Clipboard</b>
-/clip get — read clipboard
-/clip set — write clipboard (reply to message)
-/clip history — last 10 clipboard items
+<b>CLIPBOARD</b>
+<pre>/clip get              read clipboard
+/clip set              write clipboard (reply)
+/clip history          last 10 items</pre>
 
-<b>Media</b>
-/media — media control panel
-/volume &lt;0-100|up|down|mute&gt; — set volume
-/nowplaying — current track info
+<b>MEDIA</b>
+<pre>/media                 media control panel
+/volume [0-100|up|down|mute]
+/nowplaying            current track</pre>
 
-<b>Apps</b>
-/launch &lt;name&gt; — open app by name
-/focus &lt;minutes&gt; — block distractions
-/type &lt;text&gt; — type into active window
-/speedtest — internet speed test
+<b>APPS</b>
+<pre>/launch &lt;name&gt;         open app by name
+/focus [min]           block distractions
+/type &lt;text&gt;           type into active window
+/speedtest             internet speed</pre>
 
-<b>Scheduler</b>
-/schedule &lt;time&gt; &lt;cmd&gt; — schedule a command
-/babysit &lt;cmd&gt; — watch a process, notify on exit
-/wake &lt;mac&gt; — Wake-on-LAN
+<b>SCHEDULER</b>
+<pre>/schedule &lt;time&gt; &lt;cmd&gt; schedule a command
+/babysit &lt;cmd&gt;         watch a process
+/wake &lt;mac&gt;            wake-on-LAN</pre>
 
-<b>Network</b>
-/netstat — active connections per process
-/lan — scan LAN for devices
+<b>NETWORK</b>
+<pre>/netstat               active connections by process
+/lan                   scan LAN for devices</pre>
 
-<b>Remote / Presentation</b>
-/next — right arrow key
-/prev — left arrow key
-/fullscreen — F5 key
-/escape — escape key
-/openurl &lt;url&gt; — open URL in browser
-/closetab — Ctrl+W
+<b>REMOTE</b>
+<pre>/next · /prev          arrow keys
+/fullscreen · /escape  F5 / esc
+/openurl &lt;url&gt;         open in browser
+/closetab              ctrl+w</pre>
 
-<b>Notepad</b>
-/note &lt;text&gt; — add note
-/notes — list all notes
+<b>NOTEPAD</b>
+<pre>/note &lt;text&gt;           add note
+/notes                 list notes</pre>
 
-<b>Daemon</b>
-/daemon install — auto-start on login
-/daemon uninstall — remove auto-start
-/daemon status — check startup status
+<b>WATCHERS</b>
+<pre>/watch &lt;rule&gt;          add watch rule (cpu/ram/disk/process/file)
+/watches               list active rules
+/unwatch &lt;id&gt;          remove rule</pre>
 
-<b>Watchers</b>
-/watch &lt;rule&gt; — add a watch rule (cpu/ram/disk/process/file)
-/watches — list active watch rules
-/unwatch &lt;id&gt; — remove a watch rule
+<b>REPORTS</b>
+<pre>/report now|on HH:MM|off</pre>
 
-<b>Reports</b>
-/report now — instant system snapshot
-/report on HH:MM — schedule daily report
-/report off — cancel daily report
+<b>TIMELAPSE</b>
+<pre>/timelapse &lt;dur&gt; [interval=Xm]
+/stream [sec]          burst capture GIF
+/stage &lt;path&gt;          upload for offline access</pre>
 
-<b>Timelapse / Stage</b>
-/timelapse &lt;duration&gt; [interval=Xm] — record screen timelapse GIF
-/stream [seconds] — burst screen capture GIF (5–60s)
-/stage &lt;path&gt; — upload file to Telegram for offline access
+<b>DAEMON</b>
+<pre>/daemon install|uninstall|status</pre>
 
-<b>Guardian</b>
-/snap — webcam snapshot
-/guard — toggle motion/USB/login alerts
-/panic — emergency lockdown"""
+<b>GUARDIAN</b>
+<pre>/snap                  webcam snapshot
+/guard on|off|status   motion and USB alerts
+/panic                 emergency lockdown</pre>"""
 
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -128,7 +121,10 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    await update.message.reply_text(f"Ghost is online. Hello {update.effective_user.first_name}.")
+    await update.message.reply_text(
+        f"<code>ghost@pc</code>  online  hi {update.effective_user.first_name}\n/help for commands.",
+        parse_mode=ParseMode.HTML
+    )
 
 
 async def run_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -36,23 +36,26 @@ async def netstat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     rows = await asyncio.to_thread(_collect)
     if not rows:
-        await update.message.reply_text("No active connections.")
+        await update.message.reply_text("no active connections.")
         return
 
-    lines = ["🌐 <b>Active Connections</b>", ""]
-    for proc, hosts in sorted(rows.items())[:20]:
+    lines = ["<b>NETSTAT</b>\n<pre>"]
+    for proc, hosts in sorted(rows.items())[:15]:
+        lines.append(proc)
         unique = list(dict.fromkeys(hosts))[:4]
-        lines.append(f"<b>{proc}</b> → {', '.join(unique)}")
+        for j, h in enumerate(unique):
+            connector = "└" if j == len(unique) - 1 else "├"
+            lines.append(f"  {connector} {h}")
+    lines.append("</pre>")
     await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
 
 
 async def lan_scan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    msg = await update.message.reply_text("📡 Scanning LAN… (~5s)")
+    msg = await update.message.reply_text("scanning LAN... (~5s)")
 
     def _scan():
-        # Determine local subnet
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect(("8.8.8.8", 80))
@@ -61,17 +64,12 @@ async def lan_scan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             s.close()
         subnet = '.'.join(local_ip.split('.')[:3])
 
-        # Ping sweep to populate ARP table
         def _ping(ip):
-            subprocess.run(
-                ['ping', '-n', '1', '-w', '150', ip],
-                capture_output=True
-            )
+            subprocess.run(['ping', '-n', '1', '-w', '150', ip], capture_output=True)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=100) as ex:
             list(ex.map(_ping, [f"{subnet}.{i}" for i in range(1, 255)]))
 
-        # Read ARP table
         arp = subprocess.run(['arp', '-a'], capture_output=True, text=True)
         devices = []
         for line in arp.stdout.splitlines():
@@ -91,13 +89,14 @@ async def lan_scan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     devices, local_ip = await asyncio.to_thread(_scan)
 
-    lines = [f"📡 <b>LAN Devices</b>  (this PC: {local_ip})", ""]
-    for ip, mac, hostname in devices:
-        label = f" <i>{hostname}</i>" if hostname else ""
-        lines.append(f"<code>{ip}</code>  {mac}{label}")
-
-    if not devices:
-        lines.append("No devices found.")
+    lines = [f"<b>LAN</b>  this: <code>{local_ip}</code>\n<pre>"]
+    if devices:
+        for ip, mac, hostname in devices:
+            host_part = f"  {hostname}" if hostname else ""
+            lines.append(f"{ip:<16} {mac}{host_part}")
+    else:
+        lines.append("no devices found.")
+    lines.append("</pre>")
 
     await msg.edit_text("\n".join(lines), parse_mode=ParseMode.HTML)
 

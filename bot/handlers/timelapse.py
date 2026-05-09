@@ -33,7 +33,6 @@ def _frames_to_gif(frames: list[Image.Image], frame_duration_ms: int = 500) -> B
 
 
 def _parse_duration(s: str) -> int | None:
-    """Return seconds or None."""
     m = re.match(r'(\d+)\s*([smh])?$', s.lower().strip())
     if not m:
         return None
@@ -46,18 +45,19 @@ async def timelapse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
     if not context.args:
         await update.message.reply_text(
-            "Usage: /timelapse <duration> [interval=<n>]\n"
-            "Examples:\n"
-            "  /timelapse 30m\n"
-            "  /timelapse 2h interval=10m\n"
-            "Duration/interval: 30s, 5m, 2h"
+            "<b>TIMELAPSE</b>\n<pre>"
+            "usage: /timelapse &lt;duration&gt; [interval=&lt;n&gt;]\n\n"
+            "/timelapse 30m\n"
+            "/timelapse 2h interval=10m\n"
+            "duration/interval: 30s · 5m · 2h"
+            "</pre>",
+            parse_mode="HTML"
         )
         return
 
     raw_args = ' '.join(context.args)
-    interval_secs = 300  # default 5m
+    interval_secs = 300
 
-    # parse interval=
     m = re.search(r'interval[=\s]+(\S+)', raw_args.lower())
     if m:
         iv = _parse_duration(m.group(1))
@@ -67,19 +67,18 @@ async def timelapse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     duration_secs = _parse_duration(raw_args.split()[0])
     if not duration_secs:
-        await update.message.reply_text("Can't parse duration.")
+        await update.message.reply_text("can't parse duration.")
         return
 
     max_frames = 48
     total_frames = min(duration_secs // interval_secs, max_frames)
     if total_frames < 2:
-        await update.message.reply_text("Need at least 2 frames. Increase duration or decrease interval.")
+        await update.message.reply_text("need at least 2 frames. increase duration or decrease interval.")
         return
 
     eta_min = duration_secs // 60
     msg = await update.message.reply_text(
-        f"🎬 Timelapse started: {total_frames} frames over ~{eta_min}m. "
-        f"GIF will be sent when complete."
+        f"timelapse: {total_frames} frames over {eta_min}m. GIF incoming."
     )
 
     async def _run():
@@ -93,11 +92,13 @@ async def timelapse_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             if i < total_frames - 1:
                 await asyncio.sleep(interval_secs)
         if not frames:
-            await msg.edit_text("❌ No frames captured.")
+            await msg.edit_text("no frames captured.")
             return
         gif = await asyncio.to_thread(_frames_to_gif, frames, 500)
-        caption = f"📽 Timelapse — {len(frames)} frames over {eta_min}m"
-        await update.message.reply_document(document=gif, filename="timelapse.gif", caption=caption)
+        await update.message.reply_document(
+            document=gif, filename="timelapse.gif",
+            caption=f"timelapse  {len(frames)} frames  {eta_min}m"
+        )
 
     asyncio.create_task(_run())
 
@@ -114,7 +115,7 @@ async def stream_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     interval = 2
     total_frames = secs // interval
-    msg = await update.message.reply_text(f"🎬 Capturing {secs}s burst ({total_frames} frames)…")
+    msg = await update.message.reply_text(f"stream: {secs}s burst ({total_frames} frames)...")
 
     async def _run():
         frames: list[Image.Image] = []
@@ -126,13 +127,13 @@ async def stream_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
                 pass
             await asyncio.sleep(interval)
         if not frames:
-            await msg.edit_text("❌ No frames captured.")
+            await msg.edit_text("no frames captured.")
             return
         gif = await asyncio.to_thread(_frames_to_gif, frames, 200)
         await msg.delete()
         await update.message.reply_document(
             document=gif, filename="stream.gif",
-            caption=f"🎬 {secs}s screen burst ({len(frames)} frames)"
+            caption=f"stream  {len(frames)} frames  {secs}s"
         )
 
     asyncio.create_task(_run())
@@ -142,24 +143,24 @@ async def stage_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     if not context.args:
-        await update.message.reply_text("Usage: /stage <path>  — uploads file to Telegram for offline access")
+        await update.message.reply_text(
+            "usage: /stage &lt;path&gt;  uploads file to Telegram for offline access",
+            parse_mode="HTML"
+        )
         return
     path = Path(' '.join(context.args))
     if not path.exists():
-        await update.message.reply_text(f"File not found: {path}")
+        await update.message.reply_text(f"not found: {path}")
         return
     if path.is_dir():
-        await update.message.reply_text("Path is a directory. Provide a file path.")
+        await update.message.reply_text("path is a directory. provide a file.")
         return
     size = path.stat().st_size
     from utils.windows_utils import fmt_size
     await update.message.reply_document(
         document=open(path, 'rb'),
         filename=path.name,
-        caption=(
-            f"📦 Staged: {path.name} ({fmt_size(size)})\n"
-            f"Accessible from Telegram history even when PC is off."
-        )
+        caption=f"staged: {path.name}  ({fmt_size(size)})"
     )
 
 

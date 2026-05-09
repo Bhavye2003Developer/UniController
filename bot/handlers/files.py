@@ -38,20 +38,21 @@ async def _show_dir(message, context, path: Path) -> None:
     context.user_data['browse_dir'] = str(path)
     context.user_data['browse_items'] = {i: str(item) for i, item in enumerate(items)}
 
-    lines = [f"📂 <code>{path}</code>", ""]
+    lines = [f"<b>FILES</b>  <code>{path}</code>\n<pre>"]
     for i, item in enumerate(items):
-        name = item.name[:35]
+        name = item.name[:38]
         if item.is_dir():
-            lines.append(f"{i+1:2}. 📁 {name}")
+            lines.append(f"{i+1:2}.  {name}/")
         else:
-            size = item.stat().st_size
-            size_str = f"{size // 1024}KB" if size >= 1024 else f"{size}B"
-            lines.append(f"{i+1:2}. 📄 {name}  <i>{size_str}</i>")
-    lines.append(f"\n{len(items)} items")
+            from utils.windows_utils import fmt_size
+            size_str = fmt_size(item.stat().st_size)
+            lines.append(f"{i+1:2}.  {name:<40}  {size_str:>8}")
+    lines.append("</pre>")
+    lines.append(f"{len(items)} items")
 
     keyboard = []
     if path.parent != path:
-        keyboard.append([InlineKeyboardButton("⬆️ ..", callback_data="nav_up")])
+        keyboard.append([InlineKeyboardButton(".. (up)", callback_data="nav_up")])
 
     row = []
     for i in range(len(items)):
@@ -133,7 +134,7 @@ async def upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     dest = dest_dir / filename
     file_obj = await context.bot.get_file(doc.file_id)
     await file_obj.download_to_drive(str(dest))
-    await update.message.reply_text(f"✅ Saved to {dest}")
+    await update.message.reply_text(f"saved: <code>{dest}</code>", parse_mode=ParseMode.HTML)
 
 
 async def cleanup_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -145,17 +146,18 @@ async def cleanup_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await msg.edit_text("Nothing to clean.")
         return
     total = sum(s for s, _ in sizes.values())
-    lines = ["🧹 <b>Junk found:</b>", ""]
+    lines = ["<b>CLEANUP</b>\n<pre>"]
     for label, (size, count) in sizes.items():
-        lines.append(f"{label}: {fmt_size(size)} ({count} files)")
-    lines.append(f"\nTotal: <b>{fmt_size(total)}</b>")
+        lines.append(f"{label:<18}  {fmt_size(size):>8}  ({count} files)")
+    lines.append(f"\n{'total':<18}  {fmt_size(total):>8}")
+    lines.append("</pre>")
     context.user_data['cleanup_categories'] = list(sizes.keys())
     await msg.edit_text(
         "\n".join(lines),
         parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("✅ Clean All", callback_data="cleanup_all"),
-            InlineKeyboardButton("❌ Cancel",    callback_data="cleanup_cancel"),
+            InlineKeyboardButton("clean all", callback_data="cleanup_all"),
+            InlineKeyboardButton("cancel",    callback_data="cleanup_cancel"),
         ]])
     )
 
@@ -166,11 +168,11 @@ async def cleanup_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     await query.answer()
     if query.data == "cleanup_cancel":
-        await query.edit_message_text("Cleanup cancelled.")
+        await query.edit_message_text("cleanup cancelled.")
         return
     categories = context.user_data.get('cleanup_categories', [])
     freed = await asyncio.to_thread(do_cleanup, categories)
-    await query.edit_message_text(f"✅ Cleaned. Freed {fmt_size(freed)}.")
+    await query.edit_message_text(f"cleaned. freed: {fmt_size(freed)}")
 
 
 async def photo_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -180,11 +182,11 @@ async def photo_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     context.user_data['pending_photo_id'] = photo.file_id
     context.user_data['pending_photo_ts'] = int(time.time())
     await update.message.reply_text(
-        "📸 Photo received. What to do with it?",
+        "photo received:",
         reply_markup=InlineKeyboardMarkup([[
-            InlineKeyboardButton("🖼 Set Wallpaper",  callback_data="photo_wallpaper"),
-            InlineKeyboardButton("🖥 Save Desktop",   callback_data="photo_desktop"),
-            InlineKeyboardButton("📁 Save to Inbox",  callback_data="photo_inbox"),
+            InlineKeyboardButton("wallpaper", callback_data="photo_wallpaper"),
+            InlineKeyboardButton("desktop",   callback_data="photo_desktop"),
+            InlineKeyboardButton("inbox",     callback_data="photo_inbox"),
         ]])
     )
 
@@ -208,15 +210,15 @@ async def photo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     try:
         if action == 'photo_wallpaper':
             await asyncio.to_thread(set_wallpaper, tmp_path)
-            await query.edit_message_text("🖼 Wallpaper set.")
+            await query.edit_message_text("wallpaper set.")
         elif action == 'photo_desktop':
             dest = Path.home() / 'Desktop' / filename
             shutil.copy(tmp_path, dest)
-            await query.edit_message_text(f"🖥 Saved to Desktop: {filename}")
+            await query.edit_message_text(f"saved to desktop: {filename}")
         elif action == 'photo_inbox':
             INBOX.mkdir(parents=True, exist_ok=True)
             shutil.copy(tmp_path, INBOX / filename)
-            await query.edit_message_text(f"📁 Saved to Inbox: {filename}")
+            await query.edit_message_text(f"saved to inbox: {filename}")
     except Exception as e:
         await query.edit_message_text(f"Failed: {e}")
     finally:
@@ -243,7 +245,7 @@ async def print_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await file_obj.download_to_drive(tmp_path)
     try:
         await asyncio.to_thread(print_file, tmp_path)
-        await update.message.reply_text(f"🖨️ Sent to printer: {doc.file_name}")
+        await update.message.reply_text(f"sent to printer: {doc.file_name}")
     except Exception as e:
         await update.message.reply_text(f"Print failed: {e}")
 

@@ -9,9 +9,9 @@ from telegram.constants import ParseMode
 from telegram.ext import CommandHandler, ContextTypes
 
 from bot.handlers.core import is_authorized
+from bot.handlers.ui import bar
 
 _REPORT_JOB = "daily_report"
-_IDLE_THRESHOLD = 30 * 60  # 30 minutes
 
 
 def _build_report() -> str:
@@ -20,19 +20,23 @@ def _build_report() -> str:
     disk = psutil.disk_usage('C:\\')
     try:
         bat = psutil.sensors_battery()
-        bat_line = f"🔋 Battery: {bat.percent:.0f}% {'(charging)' if bat.power_plugged else ''}" if bat else ""
+        bat_line = (
+            f"bat   {bar(bat.percent)}  {bat.percent:.0f}%"
+            f"{'  charging' if bat.power_plugged else ''}"
+        ) if bat else None
     except Exception:
-        bat_line = ""
+        bat_line = None
 
     lines = [
-        f"📊 <b>Daily PC Report — {datetime.date.today()}</b>",
-        "",
-        f"CPU:  {cpu:.0f}%",
-        f"RAM:  {ram.percent:.0f}%  ({ram.used // 1024**3:.1f}/{ram.total // 1024**3:.1f} GB)",
-        f"Disk: {disk.percent:.0f}%  ({disk.free // 1024**3:.1f} GB free)",
+        f"<b>REPORT</b>  {datetime.date.today()}",
+        "<pre>",
+        f"cpu   {bar(cpu)}  {cpu:.0f}%",
+        f"ram   {bar(ram.percent)}  {ram.percent:.0f}%  {ram.used//1024**3:.1f}/{ram.total//1024**3:.1f} GB",
+        f"disk  {bar(disk.percent)}  {disk.percent:.0f}%  {disk.free//1024**3:.1f} GB free",
     ]
     if bat_line:
         lines.append(bat_line)
+    lines.append("</pre>")
     return "\n".join(lines)
 
 
@@ -53,10 +57,9 @@ async def report_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             h, m = map(int, time_str.split(':'))
             schedule_time = datetime.time(h, m)
         except (ValueError, IndexError):
-            await update.message.reply_text("Usage: /report on HH:MM  (e.g. /report on 09:00)")
+            await update.message.reply_text("usage: /report on HH:MM")
             return
 
-        # Cancel any existing job
         for job in context.job_queue.get_jobs_by_name(_REPORT_JOB):
             job.schedule_removal()
 
@@ -68,7 +71,7 @@ async def report_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         context.job_queue.run_daily(_daily, time=schedule_time, name=_REPORT_JOB)
         await update.message.reply_text(
-            f"📊 Daily report scheduled at {schedule_time.strftime('%H:%M')} every day."
+            f"daily report scheduled at {schedule_time.strftime('%H:%M')}."
         )
         return
 
@@ -78,11 +81,11 @@ async def report_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             job.schedule_removal()
             removed += 1
         await update.message.reply_text(
-            "📊 Daily report disabled." if removed else "No daily report was scheduled."
+            "daily report off." if removed else "no daily report was scheduled."
         )
         return
 
-    await update.message.reply_text("Usage: /report now | on HH:MM | off")
+    await update.message.reply_text("usage: /report now|on HH:MM|off")
 
 
 async def send_session_summary(bot, chat_id: int, idle_secs: float) -> None:
@@ -93,10 +96,11 @@ async def send_session_summary(bot, chat_id: int, idle_secs: float) -> None:
     h, rem = divmod(int(idle_secs), 3600)
     m = rem // 60
     away = f"{h}h {m}m" if h else f"{m}m"
-    lines = [f"👋 <b>Back after {away}:</b>", ""]
+    lines = [f"<b>BACK</b>  away {away}\n<pre>"]
     for ts, text in events:
         t = datetime.datetime.fromtimestamp(ts).strftime('%H:%M')
-        lines.append(f"  [{t}] {text}")
+        lines.append(f"  {t}  {text}")
+    lines.append("</pre>")
     await bot.send_message(chat_id=chat_id, text="\n".join(lines), parse_mode=ParseMode.HTML)
 
 

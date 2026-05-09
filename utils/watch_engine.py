@@ -60,7 +60,7 @@ class WatchEngine:
                     if alert and time.time() - rule._last_alerted > rule._cooldown:
                         rule._last_alerted = time.time()
                         asyncio.run_coroutine_threadsafe(
-                            self._bot.send_message(rule.chat_id, text=f"👁 Watch alert: {alert}"),
+                            self._bot.send_message(rule.chat_id, text=f"[watch] {alert}"),
                             self._loop
                         )
                 except Exception:

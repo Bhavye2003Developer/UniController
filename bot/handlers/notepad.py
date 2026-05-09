@@ -26,30 +26,31 @@ async def note_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     if not context.args:
         await update.message.reply_text(
-            "Usage:\n"
-            "/note &lt;text&gt; — add note\n"
-            "/note clear &lt;n&gt; — delete note #n\n"
-            "/notes — list all",
+            "<b>NOTE</b>\n<pre>"
+            "/note &lt;text&gt;       add note\n"
+            "/note clear &lt;n&gt;   delete note #n\n"
+            "/notes             list all"
+            "</pre>",
             parse_mode=ParseMode.HTML
         )
         return
 
     if context.args[0].lower() == 'clear':
         if len(context.args) < 2:
-            await update.message.reply_text("Usage: /note clear <n>")
+            await update.message.reply_text("usage: /note clear &lt;n&gt;", parse_mode=ParseMode.HTML)
             return
         try:
             n = int(context.args[1]) - 1
         except ValueError:
-            await update.message.reply_text("Provide a note number.")
+            await update.message.reply_text("provide a note number.")
             return
         lines = _load()
         if n < 0 or n >= len(lines):
-            await update.message.reply_text("Note not found.")
+            await update.message.reply_text("note not found.")
             return
         removed = lines.pop(n)
         _save(lines)
-        await update.message.reply_text(f"🗑 Deleted: {removed[:60]}")
+        await update.message.reply_text(f"deleted: <code>{removed[:60]}</code>", parse_mode=ParseMode.HTML)
         return
 
     text = ' '.join(context.args)
@@ -57,7 +58,7 @@ async def note_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lines = _load()
     lines.append(f"[{ts}] {text}")
     _save(lines)
-    await update.message.reply_text("✅ Noted.")
+    await update.message.reply_text("noted.")
 
 
 async def notes_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -65,11 +66,12 @@ async def notes_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     lines = _load()
     if not lines:
-        await update.message.reply_text("No notes yet. Use /note <text>")
+        await update.message.reply_text("no notes. use /note &lt;text&gt;", parse_mode=ParseMode.HTML)
         return
-    numbered = '\n'.join(f"{i + 1}. {l}" for i, l in enumerate(lines[-20:]))
+    recent = lines[-20:]
+    body = "\n".join(f"{i+1:2}.  {l}" for i, l in enumerate(recent))
     await update.message.reply_text(
-        f"📋 <b>Notes ({len(lines)}):</b>\n\n{numbered}",
+        f"<b>NOTES</b>  {len(lines)} entries\n<pre>{body}</pre>",
         parse_mode=ParseMode.HTML
     )
 
