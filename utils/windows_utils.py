@@ -3,8 +3,6 @@ import os
 import subprocess
 import time
 from io import BytesIO
-import glob
-import winreg
 from pathlib import Path
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
@@ -59,18 +57,20 @@ def frame_diff_pixel_count(frame_a: np.ndarray, frame_b: np.ndarray) -> int:
     return int(np.count_nonzero(diff > 30))
 
 
+def _vol_ctrl():
+    device = AudioUtilities.GetSpeakers()
+    # pycaw >= 20231222 wraps IMMDevice in AudioDevice; access raw COM via _dev
+    mm_device = getattr(device, '_dev', device)
+    interface = mm_device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    return cast(interface, POINTER(IAudioEndpointVolume))
+
+
 def get_volume() -> float:
-    speakers = AudioUtilities.GetSpeakers()
-    interface = speakers.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
-    return round(volume.GetMasterVolumeLevelScalar() * 100, 1)
+    return round(_vol_ctrl().GetMasterVolumeLevelScalar() * 100, 1)
 
 
 def set_volume(level: int) -> None:
-    speakers = AudioUtilities.GetSpeakers()
-    interface = speakers.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    volume = cast(interface, POINTER(IAudioEndpointVolume))
-    volume.SetMasterVolumeLevelScalar(max(0.0, min(1.0, level / 100)), None)
+    _vol_ctrl().SetMasterVolumeLevelScalar(max(0.0, min(1.0, level / 100)), None)
 
 
 def mute_toggle() -> None:
