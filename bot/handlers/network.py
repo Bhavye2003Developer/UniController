@@ -14,40 +14,33 @@ from bot.handlers.core import is_authorized
 async def netstat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
+    msg = await update.message.reply_text("checking connections...")
 
     def _collect():
-        rows: dict[str, list[str]] = {}
+        rows: dict[str, set] = {}
         for conn in psutil.net_connections(kind='inet'):
             if conn.status not in ('ESTABLISHED', 'LISTEN'):
                 continue
             try:
                 name = psutil.Process(conn.pid).name() if conn.pid else 'system'
             except (psutil.NoSuchProcess, psutil.AccessDenied):
-                name = f'pid:{conn.pid}'
-            raddr = conn.raddr
-            if not raddr:
+                name = 'unknown'
+            if not conn.raddr:
                 continue
-            try:
-                host = socket.gethostbyaddr(raddr.ip)[0]
-            except socket.herror:
-                host = raddr.ip
-            rows.setdefault(name, []).append(host)
+            rows.setdefault(name, set()).add(conn.raddr.ip)
         return rows
 
     rows = await asyncio.to_thread(_collect)
     if not rows:
-        await update.message.reply_text("no active connections.")
+        await msg.edit_text("no active connections.")
         return
 
     lines = ["<b>NETSTAT</b>\n<pre>"]
-    for proc, hosts in sorted(rows.items())[:15]:
-        lines.append(proc)
-        unique = list(dict.fromkeys(hosts))[:4]
-        for j, h in enumerate(unique):
-            connector = "└" if j == len(unique) - 1 else "├"
-            lines.append(f"  {connector} {h}")
+    for proc, ips in sorted(rows.items())[:12]:
+        ip_list = '  '.join(list(ips)[:3])
+        lines.append(f"{proc[:18]:<18}  {ip_list}")
     lines.append("</pre>")
-    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
+    await msg.edit_text("\n".join(lines), parse_mode=ParseMode.HTML)
 
 
 async def lan_scan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

@@ -57,12 +57,16 @@ async def clip(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             )
 
     elif sub == 'set':
-        reply = update.message.reply_to_message
-        if reply is None or not reply.text:
-            await update.message.reply_text("reply to a text message with /clip set.")
+        if len(args) > 1:
+            pyperclip.copy(' '.join(args[1:]))
+            await update.message.reply_text("copied.")
             return
-        pyperclip.copy(reply.text)
-        await update.message.reply_text("copied to clipboard.")
+        reply = update.message.reply_to_message
+        if reply and reply.text:
+            pyperclip.copy(reply.text)
+            await update.message.reply_text("copied.")
+        else:
+            await update.message.reply_text("usage: /clip set &lt;text&gt;  or reply to a message with /clip set", parse_mode=ParseMode.HTML)
 
     elif sub == 'history':
         with _lock:

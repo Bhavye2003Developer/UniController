@@ -40,7 +40,6 @@ HELP_TEXT = """<b>UNICONTROLLER</b>
 /sysinfo - cpu, ram, disk, uptime
 /ps - processes by cpu
 /kill &lt;pid|name&gt; - kill process
-/temp - cpu temperatures
 /lock - lock screen
 /shutdown - power off
 /restart - reboot

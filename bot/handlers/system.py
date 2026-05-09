@@ -19,52 +19,62 @@ _pending_restart: set[int] = set()
 async def sysinfo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    cpu = psutil.cpu_percent(interval=1)
-    ram = psutil.virtual_memory()
-    disk = psutil.disk_usage('C:\\')
-    net = psutil.net_io_counters()
-    uptime = str(datetime.timedelta(seconds=int(time.time() - psutil.boot_time())))
+    status = await update.message.reply_text("checking...")
+
+    def _get():
+        cpu = psutil.cpu_percent(interval=1)
+        ram = psutil.virtual_memory()
+        disk = psutil.disk_usage('C:\\')
+        net = psutil.net_io_counters()
+        up = str(datetime.timedelta(seconds=int(time.time() - psutil.boot_time())))
+        return cpu, ram, disk, net, up
+
+    cpu, ram, disk, net, up = await asyncio.to_thread(_get)
     sent_mb = net.bytes_sent / 1024 / 1024
     recv_mb = net.bytes_recv / 1024 / 1024
 
-    msg = (
+    text = (
         "<b>SYSINFO</b>\n<pre>"
         f"cpu   {bar(cpu)}  {cpu:.0f}%\n"
         f"ram   {bar(ram.percent)}  {ram.percent:.0f}%  {ram.used//1024**3:.1f}/{ram.total//1024**3:.1f} GB\n"
         f"disk  {bar(disk.percent)}  {disk.percent:.0f}%  {disk.free//1024**3:.1f} GB free\n"
         f"net   ↑{sent_mb:.1f} MB  ↓{recv_mb:.1f} MB\n"
-        f"up    {uptime}"
+        f"up    {up}"
         "</pre>"
     )
-    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+    await status.edit_text(text, parse_mode=ParseMode.HTML)
 
 
 async def ps(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    procs = []
-    for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
-        try:
-            procs.append(p.info)
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
+    status = await update.message.reply_text("checking processes...")
 
-    procs.sort(key=lambda x: x.get('cpu_percent') or 0, reverse=True)
-    top = procs[:15]
+    def _get():
+        procs = []
+        for p in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
+            try:
+                procs.append(p.info)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        procs.sort(key=lambda x: x.get('cpu_percent') or 0, reverse=True)
+        return procs[:15]
+
+    top = await asyncio.to_thread(_get)
 
     lines = ["<b>PS</b>  top 15 by cpu\n<pre>"]
-    lines.append(f"{'PID':>6}  {'CPU%':>5}  {'MEM%':>5}  NAME")
+    lines.append(f"{'NAME':<20}  {'CPU%':>5}  {'MEM%':>5}")
     keyboard = []
     for p in top:
         name = (p.get('name') or 'unknown')[:20]
         cpu  = p.get('cpu_percent') or 0
         mem  = p.get('memory_percent') or 0
         pid  = p.get('pid', 0)
-        lines.append(f"{pid:6d}  {cpu:5.1f}  {mem:5.1f}  {name}")
-        keyboard.append([InlineKeyboardButton(f"kill  {name}", callback_data=f"killpid_{pid}")])
+        lines.append(f"{name:<20}  {cpu:5.1f}  {mem:5.1f}")
+        keyboard.append([InlineKeyboardButton(f"kill {name.strip()}", callback_data=f"killpid_{pid}")])
     lines.append("</pre>")
 
-    await update.message.reply_text(
+    await status.edit_text(
         "\n".join(lines), parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
