@@ -5,6 +5,18 @@ from pathlib import Path
 _TASK_NAME = "UniController"
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _VBS_PATH = _PROJECT_ROOT / "run.vbs"
+_BAT_PATH = _PROJECT_ROOT / "run.bat"
+
+
+def _write_bat() -> None:
+    """Stamp run.bat with the exact Python binary that is currently running.
+    Task Scheduler has a minimal PATH so bare 'python' won't resolve."""
+    root = _PROJECT_ROOT
+    _BAT_PATH.write_text(
+        f'@echo off\r\n'
+        f'cd /d "{root}"\r\n'
+        f'"{sys.executable}" "{root / "run.py"}" >> "{root / "unicontroller.log"}" 2>&1\r\n'
+    )
 
 
 def _task_exists() -> bool:
@@ -20,8 +32,9 @@ def install() -> str:
         return "Startup daemon only supported on Windows."
     if not _VBS_PATH.exists():
         return f"run.vbs not found at {_VBS_PATH}"
+    _write_bat()
     if _task_exists():
-        return "Already installed. Runs automatically at login."
+        return f"Already installed. run.bat updated with Python path:\n<code>{sys.executable}</code>"
     r = subprocess.run(
         [
             'schtasks', '/create',
@@ -33,7 +46,7 @@ def install() -> str:
         capture_output=True, text=True
     )
     if r.returncode == 0:
-        return "Startup task installed. Runs on next login."
+        return f"Startup task installed. Runs on next login.\nPython: <code>{sys.executable}</code>"
     return f"Install failed: {r.stderr.strip()}"
 
 
@@ -72,4 +85,3 @@ def status() -> str:
         "?"
     )
     return f"Installed\nlast run: {last_run}  exit: {last_result}"
-
