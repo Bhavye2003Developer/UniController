@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 pip install -r requirements.txt
-python bot/tele_main.py
+python run.py
 ```
 
 Requires `.env` in project root:
