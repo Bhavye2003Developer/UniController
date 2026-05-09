@@ -40,17 +40,21 @@ HELP_TEXT = """<b>UniController Commands</b>
 /sysinfo — CPU, RAM, disk, uptime
 /ps — list processes
 /kill &lt;pid|name&gt; — kill process
+/temp — CPU temperatures
 /lock — lock screen
 /shutdown — shutdown PC
 /restart — restart PC
 /activewindow — active window + process info
 /powerplan [name] — show or switch power plan
+/windows — list open windows (focus/min/close)
 
 <b>Files</b>
 /files — browse filesystem
 /download — file browser / send file to chat
 /upload — receive file from chat
 /print — print document (reply to file)
+/cleanup — scan and clean junk files
+/search &lt;pattern&gt; [path] — search file contents
 
 <b>Clipboard</b>
 /clip get — read clipboard
@@ -67,6 +71,27 @@ HELP_TEXT = """<b>UniController Commands</b>
 /focus &lt;minutes&gt; — block distractions
 /type &lt;text&gt; — type into active window
 /speedtest — internet speed test
+
+<b>Scheduler</b>
+/schedule &lt;time&gt; &lt;cmd&gt; — schedule a command
+/babysit &lt;cmd&gt; — watch a process, notify on exit
+/wake &lt;mac&gt; — Wake-on-LAN
+
+<b>Network</b>
+/netstat — active connections per process
+/lan — scan LAN for devices
+
+<b>Remote / Presentation</b>
+/next — right arrow key
+/prev — left arrow key
+/fullscreen — F5 key
+/escape — escape key
+/openurl &lt;url&gt; — open URL in browser
+/closetab — Ctrl+W
+
+<b>Notepad</b>
+/note &lt;text&gt; — add note
+/notes — list all notes
 
 <b>Daemon</b>
 /daemon install — auto-start on login

@@ -111,6 +111,14 @@ def list_apps() -> list[tuple[str, str]]:
     return apps
 
 
+def fmt_size(size: int) -> str:
+    for unit in ('B', 'KB', 'MB', 'GB'):
+        if size < 1024:
+            return f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
+
+
 def launch_app(path: str) -> None:
     os.startfile(path)
 
@@ -187,3 +195,154 @@ def type_text(text: str) -> None:
 def print_file(path: str) -> None:
     import win32api
     win32api.ShellExecute(0, "print", path, None, ".", 0)
+
+
+def get_cpu_temps() -> list[float]:
+    try:
+        result = subprocess.run(
+            ['powershell', '-NoProfile', '-Command',
+             'Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature'
+             ' | Select-Object -ExpandProperty CurrentTemperature'],
+            capture_output=True, text=True, timeout=6
+        )
+        temps = []
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if line.isdigit():
+                temps.append(round(int(line) / 10 - 273.15, 1))
+        return temps
+    except Exception:
+        return []
+
+
+def list_open_windows() -> list[tuple[int, str]]:
+    import win32gui
+    results = []
+    def _cb(hwnd, _):
+        if win32gui.IsWindowVisible(hwnd):
+            title = win32gui.GetWindowText(hwnd).strip()
+            if title:
+                results.append((hwnd, title))
+    win32gui.EnumWindows(_cb, None)
+    return results
+
+
+def window_action(hwnd: int, action: str) -> None:
+    import win32gui, win32con
+    if action == 'focus':
+        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        win32gui.SetForegroundWindow(hwnd)
+    elif action == 'minimize':
+        win32gui.ShowWindow(hwnd, win32con.SW_MINIMIZE)
+    elif action == 'close':
+        win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
+
+
+def press_key(key_name: str) -> None:
+    from pynput.keyboard import Key, Controller, KeyCode
+    _map = {
+        'right': Key.right, 'left': Key.left, 'up': Key.up, 'down': Key.down,
+        'f5': Key.f5, 'f11': Key.f11, 'escape': Key.esc,
+        'enter': Key.enter, 'space': Key.space, 'tab': Key.tab,
+    }
+    kb = Controller()
+    key = _map.get(key_name.lower())
+    if key:
+        kb.press(key); kb.release(key)
+    elif len(key_name) == 1:
+        kc = KeyCode.from_char(key_name)
+        kb.press(kc); kb.release(kc)
+
+
+def hotkey(modifier: str, key: str) -> None:
+    from pynput.keyboard import Key, Controller, KeyCode
+    _mods = {'ctrl': Key.ctrl, 'alt': Key.alt, 'shift': Key.shift}
+    mod = _mods.get(modifier.lower(), Key.ctrl)
+    kb = Controller()
+    with kb.pressed(mod):
+        kc = KeyCode.from_char(key)
+        kb.press(kc); kb.release(kc)
+
+
+def set_wallpaper(path: str) -> None:
+    ctypes.windll.user32.SystemParametersInfoW(20, 0, str(Path(path).resolve()), 3)
+
+
+_TEXT_EXT = {
+    '.txt', '.py', '.js', '.ts', '.md', '.json', '.yaml', '.yml',
+    '.html', '.css', '.sh', '.bat', '.ini', '.cfg', '.log', '.csv',
+    '.xml', '.toml', '.rs', '.go', '.java', '.c', '.cpp', '.h',
+}
+
+
+def search_files(pattern: str, root: Path, max_results: int = 20) -> list[tuple[str, int, str]]:
+    results = []
+    pat = pattern.lower()
+    for path in root.rglob('*'):
+        if len(results) >= max_results:
+            break
+        if not path.is_file() or path.suffix.lower() not in _TEXT_EXT:
+            continue
+        try:
+            for i, line in enumerate(
+                path.read_text(encoding='utf-8', errors='ignore').splitlines(), 1
+            ):
+                if pat in line.lower():
+                    results.append((str(path), i, line.strip()[:100]))
+                    if len(results) >= max_results:
+                        break
+        except (PermissionError, OSError):
+            pass
+    return results
+
+
+def scan_junk() -> dict[str, tuple[int, int]]:
+    results = {}
+    _scan_dir(Path(os.environ.get('TEMP', 'C:\\Temp')), 'Temp', None, results)
+    _scan_dir(Path.home() / 'Downloads', 'Old Downloads (>30d)',
+              time.time() - 30 * 24 * 3600, results)
+    return results
+
+
+def _scan_dir(path: Path, label: str, cutoff, out: dict) -> None:
+    total, count = 0, 0
+    try:
+        for f in path.rglob('*'):
+            try:
+                if f.is_file():
+                    st = f.stat()
+                    if cutoff is None or st.st_mtime < cutoff:
+                        total += st.st_size
+                        count += 1
+            except (PermissionError, OSError):
+                pass
+    except (PermissionError, OSError):
+        pass
+    if count:
+        out[label] = (total, count)
+
+
+def do_cleanup(categories: list[str]) -> int:
+    freed = 0
+    if 'Temp' in categories:
+        freed += _clean_dir(Path(os.environ.get('TEMP', 'C:\\Temp')), None)
+    if 'Old Downloads (>30d)' in categories:
+        freed += _clean_dir(Path.home() / 'Downloads', time.time() - 30 * 24 * 3600)
+    return freed
+
+
+def _clean_dir(path: Path, cutoff) -> int:
+    freed = 0
+    try:
+        for f in path.rglob('*'):
+            try:
+                if f.is_file():
+                    st = f.stat()
+                    if cutoff is None or st.st_mtime < cutoff:
+                        freed += st.st_size
+                        f.unlink()
+            except (PermissionError, OSError):
+                pass
+    except (PermissionError, OSError):
+        pass
+    return freed

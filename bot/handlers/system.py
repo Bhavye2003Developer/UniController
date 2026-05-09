@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 import os
 import subprocess
@@ -9,7 +10,7 @@ from telegram.constants import ParseMode
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from bot.handlers.core import is_authorized
-from utils.windows_utils import get_active_window, get_powerplans, lock_screen, set_powerplan
+from utils.windows_utils import get_active_window, get_cpu_temps, get_powerplans, lock_screen, set_powerplan
 
 _pending_shutdown: set[int] = set()
 _pending_restart: set[int] = set()
@@ -145,6 +146,20 @@ async def restart_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     subprocess.run(['shutdown', '/r', '/t', '3'])
 
 
+async def temp_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    temps = await asyncio.to_thread(get_cpu_temps)
+    if not temps:
+        await update.message.reply_text("🌡 Temperature data unavailable on this system.")
+        return
+    lines = ["🌡 <b>Temperatures</b>", ""]
+    for i, t in enumerate(temps):
+        emoji = "🔴" if t > 90 else "🟡" if t > 70 else "🟢"
+        lines.append(f"Zone {i}: {t}°C {emoji}")
+    await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
+
+
 async def activewindow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
@@ -195,4 +210,5 @@ def register_system_handlers(app) -> None:
     app.add_handler(CommandHandler("restart",      restart))
     app.add_handler(CommandHandler("activewindow", activewindow))
     app.add_handler(CommandHandler("powerplan",    powerplan))
+    app.add_handler(CommandHandler("temp",         temp_cmd))
     app.add_handler(CallbackQueryHandler(kill_pid_callback, pattern="^killpid_"))

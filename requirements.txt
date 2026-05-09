@@ -16,3 +16,4 @@ pycaw
 pynput
 rapidfuzz
 speedtest-cli
+wakeonlan

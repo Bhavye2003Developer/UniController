@@ -1,13 +1,17 @@
 import asyncio
 import os
+import shutil
 import tempfile
+import time
 from pathlib import Path
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram.constants import ParseMode
+from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 from bot.handlers.core import is_authorized
-from utils.windows_utils import print_file
+from utils.proactive import INBOX
+from utils.windows_utils import do_cleanup, fmt_size, print_file, scan_junk, set_wallpaper
 
 UPLOAD_DEFAULT_PATH = os.getenv('UPLOAD_DEFAULT_PATH', str(Path.home() / 'Downloads'))
 _ROOT = Path(os.path.abspath(os.sep))
@@ -132,6 +136,96 @@ async def upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f"✅ Saved to {dest}")
 
 
+async def cleanup_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    msg = await update.message.reply_text("🔍 Scanning for junk files…")
+    sizes = await asyncio.to_thread(scan_junk)
+    if not sizes:
+        await msg.edit_text("Nothing to clean.")
+        return
+    total = sum(s for s, _ in sizes.values())
+    lines = ["🧹 <b>Junk found:</b>", ""]
+    for label, (size, count) in sizes.items():
+        lines.append(f"{label}: {fmt_size(size)} ({count} files)")
+    lines.append(f"\nTotal: <b>{fmt_size(total)}</b>")
+    context.user_data['cleanup_categories'] = list(sizes.keys())
+    await msg.edit_text(
+        "\n".join(lines),
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("✅ Clean All", callback_data="cleanup_all"),
+            InlineKeyboardButton("❌ Cancel",    callback_data="cleanup_cancel"),
+        ]])
+    )
+
+
+async def cleanup_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    query = update.callback_query
+    await query.answer()
+    if query.data == "cleanup_cancel":
+        await query.edit_message_text("Cleanup cancelled.")
+        return
+    categories = context.user_data.get('cleanup_categories', [])
+    freed = await asyncio.to_thread(do_cleanup, categories)
+    await query.edit_message_text(f"✅ Cleaned. Freed {fmt_size(freed)}.")
+
+
+async def photo_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    photo = update.message.photo[-1]
+    context.user_data['pending_photo_id'] = photo.file_id
+    context.user_data['pending_photo_ts'] = int(time.time())
+    await update.message.reply_text(
+        "📸 Photo received. What to do with it?",
+        reply_markup=InlineKeyboardMarkup([[
+            InlineKeyboardButton("🖼 Set Wallpaper",  callback_data="photo_wallpaper"),
+            InlineKeyboardButton("🖥 Save Desktop",   callback_data="photo_desktop"),
+            InlineKeyboardButton("📁 Save to Inbox",  callback_data="photo_inbox"),
+        ]])
+    )
+
+
+async def photo_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    query = update.callback_query
+    await query.answer()
+    file_id = context.user_data.get('pending_photo_id')
+    if not file_id:
+        await query.edit_message_text("No photo pending.")
+        return
+    ts = context.user_data.get('pending_photo_ts', int(time.time()))
+    filename = f"photo_{ts}.jpg"
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
+        tmp_path = tmp.name
+    file_obj = await context.bot.get_file(file_id)
+    await file_obj.download_to_drive(tmp_path)
+    action = query.data
+    try:
+        if action == 'photo_wallpaper':
+            await asyncio.to_thread(set_wallpaper, tmp_path)
+            await query.edit_message_text("🖼 Wallpaper set.")
+        elif action == 'photo_desktop':
+            dest = Path.home() / 'Desktop' / filename
+            shutil.copy(tmp_path, dest)
+            await query.edit_message_text(f"🖥 Saved to Desktop: {filename}")
+        elif action == 'photo_inbox':
+            INBOX.mkdir(parents=True, exist_ok=True)
+            shutil.copy(tmp_path, INBOX / filename)
+            await query.edit_message_text(f"📁 Saved to Inbox: {filename}")
+    except Exception as e:
+        await query.edit_message_text(f"Failed: {e}")
+    finally:
+        try:
+            Path(tmp_path).unlink()
+        except OSError:
+            pass
+
+
 async def print_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
@@ -159,4 +253,8 @@ def register_files_handlers(app) -> None:
     app.add_handler(CommandHandler("download", download))
     app.add_handler(CommandHandler("upload",   upload))
     app.add_handler(CommandHandler("print",    print_cmd))
-    app.add_handler(CallbackQueryHandler(nav_callback, pattern="^nav_"))
+    app.add_handler(CommandHandler("cleanup",  cleanup_cmd))
+    app.add_handler(MessageHandler(filters.PHOTO & ~filters.COMMAND, photo_received))
+    app.add_handler(CallbackQueryHandler(nav_callback,      pattern="^nav_"))
+    app.add_handler(CallbackQueryHandler(cleanup_callback,  pattern="^cleanup_"))
+    app.add_handler(CallbackQueryHandler(photo_callback,    pattern="^photo_"))
