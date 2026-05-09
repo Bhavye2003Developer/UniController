@@ -3,10 +3,12 @@ import os
 import psutil
 from rapidfuzz import fuzz, process
 from telegram import Update
+from telegram.constants import ParseMode
 from telegram.ext import CommandHandler, ContextTypes
 
 from bot.handlers.core import is_authorized
 from utils.windows_utils import get_volume, launch_app, list_apps, mute_toggle, set_volume
+from utils import daemon as daemon_util
 
 FOCUS_BLOCKLIST = [
     x.strip().lower()
@@ -101,7 +103,23 @@ async def focus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+async def daemon(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    sub = (context.args or ['status'])[0].lower()
+    if sub == 'install':
+        msg = daemon_util.install()
+    elif sub == 'uninstall':
+        msg = daemon_util.uninstall()
+    elif sub == 'status':
+        msg = daemon_util.status()
+    else:
+        msg = "Usage: /daemon install | uninstall | status"
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+
 def register_misc_handlers(app) -> None:
     app.add_handler(CommandHandler("volume", volume))
     app.add_handler(CommandHandler("launch", launch))
     app.add_handler(CommandHandler("focus",  focus))
+    app.add_handler(CommandHandler("daemon", daemon))

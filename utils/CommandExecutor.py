@@ -43,11 +43,12 @@ class CommandExecutor():
 
     def run(self, command: list[str], timeout: int = 30) -> str:
         try:
+            cmd_str = " ".join(command)
             result = subprocess.run(
-                command,
+                [r"C:\Program Files\Git\bin\bash.exe", "-c", f"cd / && {cmd_str}"],
                 capture_output=True,
                 text=True,
-                timeout=timeout
+                timeout=timeout,
             )
             if result.returncode != 0:
                 return f"[Error - exit code {result.returncode}]\n{result.stderr.strip()}"

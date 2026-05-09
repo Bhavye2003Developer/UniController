@@ -2,6 +2,9 @@ import logging
 import os
 
 from dotenv import load_dotenv
+
+load_dotenv()
+
 from telegram.ext import Application, ApplicationBuilder
 
 from bot.handlers.clipboard import register_clipboard_handlers
@@ -11,8 +14,6 @@ from bot.handlers.guardian import register_guardian_handlers
 from bot.handlers.media import register_media_handlers
 from bot.handlers.misc import register_misc_handlers
 from bot.handlers.system import register_system_handlers
-
-load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 

@@ -29,6 +29,55 @@ def terminal_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
+HELP_TEXT = """<b>UniController Commands</b>
+
+<b>Core</b>
+/exec &lt;cmd&gt; — run shell command
+/screenshot — capture screen
+/runp — start Python REPL
+
+<b>System</b>
+/sysinfo — CPU, RAM, disk
+/ps — list processes
+/kill &lt;pid&gt; — kill process
+/lock — lock screen
+/shutdown — shutdown PC
+/restart — restart PC
+
+<b>Files</b>
+/files — browse filesystem
+/download &lt;path&gt; — send file to chat
+/upload — receive file from chat
+
+<b>Clipboard</b>
+/clip get — read clipboard
+/clip set &lt;text&gt; — write clipboard
+
+<b>Media</b>
+/media — media control panel
+/volume &lt;0-100&gt; — set volume
+
+<b>Apps</b>
+/launch &lt;name&gt; — open app by name
+/focus &lt;minutes&gt; — block distractions
+
+<b>Daemon</b>
+/daemon install — auto-start on login
+/daemon uninstall — remove auto-start
+/daemon status — check startup status
+
+<b>Guardian</b>
+/snap — webcam snapshot
+/guard — toggle motion/USB/login alerts
+/panic — emergency lockdown"""
+
+
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    await update.message.reply_text(HELP_TEXT, parse_mode=ParseMode.HTML)
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
@@ -150,6 +199,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 def register_core_handlers(app) -> None:
     from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler, filters
     app.add_handler(CommandHandler("start",      start))
+    app.add_handler(CommandHandler("help",       help_cmd))
     app.add_handler(CommandHandler("exec",       run_command))
     app.add_handler(CommandHandler("screenshot", screenshot))
     app.add_handler(CommandHandler("runp",       runp))

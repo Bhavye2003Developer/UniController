@@ -7,12 +7,13 @@ from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 from bot.handlers.core import is_authorized
 
 UPLOAD_DEFAULT_PATH = os.getenv('UPLOAD_DEFAULT_PATH', str(Path.home() / 'Downloads'))
+_ROOT = Path(os.path.abspath(os.sep))
 
 
 async def files(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    path_str = ' '.join(context.args) if context.args else str(Path.home())
+    path_str = ' '.join(context.args) if context.args else str(_ROOT)
     await _show_dir(update.message, context, Path(path_str))
 
 
@@ -30,23 +31,34 @@ async def _show_dir(message, context, path: Path) -> None:
     context.user_data['browse_dir'] = str(path)
     context.user_data['browse_items'] = {i: str(item) for i, item in enumerate(items)}
 
+    lines = [f"📂 <code>{path}</code>", ""]
+    for i, item in enumerate(items):
+        name = item.name[:35]
+        if item.is_dir():
+            lines.append(f"{i+1:2}. 📁 {name}")
+        else:
+            size = item.stat().st_size
+            size_str = f"{size // 1024}KB" if size >= 1024 else f"{size}B"
+            lines.append(f"{i+1:2}. 📄 {name}  <i>{size_str}</i>")
+    lines.append(f"\n{len(items)} items")
+
     keyboard = []
     if path.parent != path:
         keyboard.append([InlineKeyboardButton("⬆️ ..", callback_data="nav_up")])
 
-    for i, item in enumerate(items):
-        name = item.name[:40]
-        if item.is_dir():
-            keyboard.append([InlineKeyboardButton(f"📁 {name}", callback_data=f"nav_d_{i}")])
-        else:
-            size = item.stat().st_size
-            size_str = f"{size // 1024}KB" if size >= 1024 else f"{size}B"
-            keyboard.append([InlineKeyboardButton(f"📄 {name} ({size_str})", callback_data=f"nav_f_{i}")])
+    row = []
+    for i in range(len(items)):
+        row.append(InlineKeyboardButton(str(i + 1), callback_data=f"nav_i_{i}"))
+        if len(row) == 5:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
 
     await message.reply_text(
-        f"📂 <code>{path}</code>\n{len(items)} items",
+        "\n".join(lines),
         parse_mode="HTML",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard) if keyboard else None
     )
 
 
@@ -56,39 +68,38 @@ async def nav_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     query = update.callback_query
     await query.answer()
     data = query.data
-    current = Path(context.user_data.get('browse_dir', str(Path.home())))
+    current = Path(context.user_data.get('browse_dir', str(_ROOT)))
     items = context.user_data.get('browse_items', {})
 
     if data == 'nav_up':
         await _show_dir(query.message, context, current.parent)
-    elif data.startswith('nav_d_'):
+    elif data.startswith('nav_i_'):
         idx = int(data.split('_')[2])
-        new_path = Path(items.get(idx, str(current)))
-        await _show_dir(query.message, context, new_path)
-    elif data.startswith('nav_f_'):
-        idx = int(data.split('_')[2])
-        file_path = Path(items.get(idx, ''))
-        if not file_path.exists():
-            await query.edit_message_text("File no longer exists.")
+        item_path = Path(items.get(idx, ''))
+        if not item_path.exists():
+            await query.edit_message_text("Item no longer exists.")
             return
-        await query.message.reply_document(
-            document=open(file_path, 'rb'),
-            filename=file_path.name
-        )
+        if item_path.is_dir():
+            await _show_dir(query.message, context, item_path)
+        else:
+            await query.message.reply_document(
+                document=open(item_path, 'rb'),
+                filename=item_path.name
+            )
 
 
 async def download(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     if not context.args:
-        await update.message.reply_text("Usage: /download <path>")
+        await _show_dir(update.message, context, _ROOT)
         return
     path = Path(' '.join(context.args))
     if not path.exists():
         await update.message.reply_text(f"File not found: {path}")
         return
     if path.is_dir():
-        await update.message.reply_text("Path is a directory. Use /files to browse.")
+        await _show_dir(update.message, context, path)
         return
     await update.message.reply_document(document=open(path, 'rb'), filename=path.name)
 
