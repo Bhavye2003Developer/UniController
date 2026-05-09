@@ -2,14 +2,16 @@
 
 Control your entire PC from Telegram. Single-user, self-hosted, no cloud middleman, no AI required.
 
+> **Windows only.** The bot relies on Windows-specific APIs (`win32gui`, `pycaw`, `wmi`, `netsh`, `powercfg`, etc.). It will not run on Linux or macOS.
+
 ## Setup
 
+**Prerequisites:** Python 3.10+, a Telegram account.
+
 **1. Clone and install**
-```bash
+```
 git clone https://github.com/Bhavye2003Developer/UniController
 cd UniController
-python -m venv venv
-venv\Scripts\activate       # Linux/Mac: source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -19,17 +21,38 @@ TELEGRAM_BOT_TOKEN=your_bot_token
 ALLOWED_USER_ID=your_telegram_user_id
 ```
 
-Get your bot token from [@BotFather](https://t.me/BotFather) and your user ID from [@userinfobot](https://t.me/userinfobot).
+- Get your bot token: [@BotFather](https://t.me/BotFather) → `/newbot`
+- Get your user ID: [@userinfobot](https://t.me/userinfobot)
 
 **3. Run**
-```bash
-python bot/tele_main.py
+```
+python run.py
 ```
 
-**Auto-start on login (Windows)**
+Open Telegram, find your bot, send `/start`. Done.
+
+---
+
+## Auto-start on login (Windows)
+
+So the bot runs silently in the background every time you log in — no terminal, no manual start.
+
+**One-time setup:**
+
+Once `python run.py` is running and `/start` works, open Telegram and send this to your bot:
+
 ```
 /daemon install
 ```
+
+> This is a **Telegram message** sent to your bot — not a terminal command.
+
+Done. From the next login onward, the bot starts automatically in the background (no console window).
+
+To undo — send in Telegram: `/daemon uninstall`  
+To check — send in Telegram: `/daemon status`
+
+> **How it works:** `/daemon install` registers a Windows Task Scheduler task (`onlogon` trigger). On login, Windows silently runs `run.vbs` → `run.bat` → the bot. Logs go to `unicontroller.log` in the project root.
 
 ---
 
@@ -48,7 +71,6 @@ python bot/tele_main.py
 | `/sysinfo` | CPU, RAM, disk, network, uptime with bar graphs |
 | `/ps` | Top 15 processes by CPU with inline kill buttons |
 | `/kill <pid\|name>` | Kill a process by PID or name |
-| `/temp` | CPU temperatures per zone |
 | `/lock` | Lock screen |
 | `/shutdown` `/restart` | Power control with confirm step |
 | `/activewindow` | Focused window title, process, memory, uptime |
@@ -64,7 +86,6 @@ python bot/tele_main.py
 | `/print` | Print a document (reply to file) |
 | `/cleanup` | Scan Temp and old Downloads, clean with one tap |
 | `/search <pattern> [path]` | Search file contents across text files |
-| `/stage <path>` | Upload file to Telegram for offline access |
 
 Send a photo to the bot: choose wallpaper, save to Desktop, or save to inbox folder.
 
@@ -72,7 +93,7 @@ Send a photo to the bot: choose wallpaper, save to Desktop, or save to inbox fol
 | Command | Description |
 |---|---|
 | `/clip get` | Read current clipboard |
-| `/clip set` | Write to clipboard (reply to a message) |
+| `/clip set <text>` | Write to clipboard directly, or reply to any message with `/clip set` |
 | `/clip history` | Last 10 clipboard items with timestamps |
 
 ### Media
@@ -102,7 +123,7 @@ Examples: `/schedule in 2h shutdown`, `/schedule 11:30pm exec git pull`
 ### Network
 | Command | Description |
 |---|---|
-| `/netstat` | Active connections grouped by process, tree-style |
+| `/netstat` | Active connections by process with remote IPs |
 | `/lan` | Ping-sweep LAN, list devices with hostnames and MACs |
 
 ### Remote / Presentation
@@ -143,6 +164,7 @@ Returns from 30+ min idle automatically trigger a session summary of what happen
 |---|---|
 | `/timelapse <duration> [interval=Xm]` | Record screen as animated GIF |
 | `/stream [seconds]` | 5-60s screen burst as animated GIF |
+| `/stage <path>` | Upload file to Telegram for offline access |
 
 ### Guardian
 | Command | Description |
@@ -150,13 +172,6 @@ Returns from 30+ min idle automatically trigger a session summary of what happen
 | `/snap` | Webcam snapshot on demand |
 | `/guard on\|off\|status` | Motion, USB, and failed login alerts |
 | `/panic` | Snap webcam + lock screen + disable Wi-Fi |
-
-### Daemon
-| Command | Description |
-|---|---|
-| `/daemon install` | Add to Windows startup (Registry Run key) |
-| `/daemon uninstall` | Remove from startup |
-| `/daemon status` | Check startup registration |
 
 ---
 

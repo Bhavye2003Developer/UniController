@@ -1,15 +1,18 @@
+import subprocess
 import sys
-import winreg
 from pathlib import Path
 
-_REG_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-_REG_NAME = "UniController"
+_TASK_NAME = "UniController"
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _VBS_PATH = _PROJECT_ROOT / "run.vbs"
 
 
-def _startup_cmd() -> str:
-    return f'wscript.exe "{_VBS_PATH}"'
+def _task_exists() -> bool:
+    r = subprocess.run(
+        ['schtasks', '/query', '/tn', _TASK_NAME],
+        capture_output=True, text=True
+    )
+    return r.returncode == 0
 
 
 def install() -> str:
@@ -17,35 +20,56 @@ def install() -> str:
         return "Startup daemon only supported on Windows."
     if not _VBS_PATH.exists():
         return f"run.vbs not found at {_VBS_PATH}"
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _REG_KEY, 0, winreg.KEY_SET_VALUE) as key:
-            winreg.SetValueEx(key, _REG_NAME, 0, winreg.REG_SZ, _startup_cmd())
-        return f"✅ Startup daemon installed.\nRuns on next login via:\n<code>{_startup_cmd()}</code>"
-    except Exception as e:
-        return f"❌ Install failed: {e}"
+    if _task_exists():
+        return "Already installed. Runs automatically at login."
+    r = subprocess.run(
+        [
+            'schtasks', '/create',
+            '/tn', _TASK_NAME,
+            '/tr', f'wscript.exe "{_VBS_PATH}"',
+            '/sc', 'onlogon',
+            '/f',
+        ],
+        capture_output=True, text=True
+    )
+    if r.returncode == 0:
+        return "Startup task installed. Runs on next login."
+    return f"Install failed: {r.stderr.strip()}"
 
 
 def uninstall() -> str:
     if sys.platform != "win32":
         return "Startup daemon only supported on Windows."
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _REG_KEY, 0, winreg.KEY_SET_VALUE) as key:
-            winreg.DeleteValue(key, _REG_NAME)
-        return "✅ Startup daemon removed."
-    except FileNotFoundError:
-        return "Startup daemon was not installed."
-    except Exception as e:
-        return f"❌ Uninstall failed: {e}"
+    if not _task_exists():
+        return "Startup task is not installed."
+    r = subprocess.run(
+        ['schtasks', '/delete', '/tn', _TASK_NAME, '/f'],
+        capture_output=True, text=True
+    )
+    if r.returncode == 0:
+        return "Startup task removed."
+    return (
+        "Could not remove automatically (task was created with elevated privileges).\n"
+        "Open Task Scheduler → Task Scheduler Library → delete <b>UniController</b> manually."
+    )
 
 
 def status() -> str:
     if sys.platform != "win32":
         return "Startup daemon only supported on Windows."
-    try:
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, _REG_KEY, 0, winreg.KEY_READ) as key:
-            val, _ = winreg.QueryValueEx(key, _REG_NAME)
-        return f"🟢 Installed\n<code>{val}</code>"
-    except FileNotFoundError:
-        return "🔴 Not installed"
-    except Exception as e:
-        return f"❌ Status check failed: {e}"
+    r = subprocess.run(
+        ['schtasks', '/query', '/tn', _TASK_NAME, '/fo', 'LIST', '/v'],
+        capture_output=True, text=True
+    )
+    if r.returncode != 0:
+        return "Not installed"
+    last_run = next(
+        (l.split(':', 1)[-1].strip() for l in r.stdout.splitlines() if 'Last Run Time' in l),
+        "unknown"
+    )
+    last_result = next(
+        (l.split(':', 1)[-1].strip() for l in r.stdout.splitlines() if 'Last Result' in l),
+        "?"
+    )
+    return f"Installed\nlast run: {last_run}  exit: {last_result}"
+
