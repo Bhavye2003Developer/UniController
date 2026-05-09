@@ -21,7 +21,7 @@ TELEGRAM_BOT_TOKEN=your_bot_token
 ALLOWED_USER_ID=your_telegram_user_id
 ```
 
-- Get your bot token: [@BotFather](https://t.me/BotFather) → `/newbot`
+- Get your bot token: [@BotFather](https://t.me/BotFather) `/newbot`
 - Get your user ID: [@userinfobot](https://t.me/userinfobot)
 
 **3. Start the bot (background, no terminal needed)**
@@ -31,7 +31,7 @@ Double-click `start.bat`, or run from terminal:
 start.bat
 ```
 
-It exits immediately — the bot is running silently in the background. No terminal stays open.
+It exits immediately: the bot is running silently in the background. No terminal stays open.
 
 **4. Verify**
 
@@ -44,12 +44,12 @@ In Telegram, send to your bot:
 /daemon install
 ```
 
-> This is a **Telegram message** to your bot — not a terminal command.
+> This is a **Telegram message** to your bot, not a terminal command.
 
 Done. From now on the bot starts automatically at every login. You never need to run `start.bat` again.
 
-To stop auto-start — send `/daemon uninstall` in Telegram  
-To check status — send `/daemon status` in Telegram
+- To stop auto-start: send `/daemon uninstall` in Telegram
+- To check status: send `/daemon status` in Telegram
 
 > **How it works:** `start.bat` calls `run.vbs` via `wscript.exe`, which launches the bot with no console window and exits immediately. `/daemon install` registers a Windows Task Scheduler task that fires `run.vbs` at every login automatically. Logs go to `unicontroller.log` in the project root.
 
@@ -79,19 +79,19 @@ To check status — send `/daemon status` in Telegram
 ### Files
 | Command | Description |
 |---|---|
-| `/files` | Inline file browser starting at drive root |
-| `/download [path]` | Browse or send any file to Telegram |
-| `/upload` | Save a file from Telegram to PC |
+| `/files` | Browse Desktop, Downloads, Documents and recent files |
+| `/download` | Same as /files: tap any file to send it to Telegram |
 | `/print` | Print a document (reply to file) |
 | `/cleanup` | Scan Temp and old Downloads, clean with one tap |
 | `/search <pattern> [path]` | Search file contents across text files |
 
-Send a photo to the bot: choose wallpaper, save to Desktop, or save to inbox folder.
+Send any **file** to the bot: choose Desktop, Downloads, or Documents to save it.
+Send a **photo** to the bot: set as wallpaper, save to Desktop, or save to Downloads.
 
 ### Clipboard
 | Command | Description |
 |---|---|
-| `/clip get` | Read current clipboard |
+| `/clip` | Read current clipboard |
 | `/clip set <text>` | Write to clipboard directly, or reply to any message with `/clip set` |
 | `/clip history` | Last 10 clipboard items with timestamps |
 
@@ -176,9 +176,9 @@ Returns from 30+ min idle automatically trigger a session summary of what happen
 
 ## File Inbox / Outbox
 
-Two magic folders created automatically at `~/UniController/`:
+Two folders created automatically at `~/UniController/`:
 
-- **inbox/**: files saved here by the bot (uploads, photos)
+- **inbox/**: files saved here by the bot
 - **outbox/**: drop any file here and it auto-sends to Telegram, then moves to `outbox/sent/`
 
 ---

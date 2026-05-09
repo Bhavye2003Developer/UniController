@@ -11,8 +11,4 @@ venv/
 unicontroller.log
 .claude/
 .vscode/
-UniController_Documentation.md
-docs/
-uni_doc_updated.md
-unienv/
-unicontroller.log
+tests/
