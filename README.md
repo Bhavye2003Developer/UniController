@@ -24,35 +24,34 @@ ALLOWED_USER_ID=your_telegram_user_id
 - Get your bot token: [@BotFather](https://t.me/BotFather) → `/newbot`
 - Get your user ID: [@userinfobot](https://t.me/userinfobot)
 
-**3. Run**
+**3. Start the bot (background, no terminal needed)**
+
+Double-click `start.bat`, or run from terminal:
 ```
-python run.py
+start.bat
 ```
 
-Open Telegram, find your bot, send `/start`. Done.
+It exits immediately — the bot is running silently in the background. No terminal stays open.
 
----
+**4. Verify**
 
-## Auto-start on login (Windows)
+Open Telegram, find your bot, send `/start`. You should get a reply.
 
-So the bot runs silently in the background every time you log in — no terminal, no manual start.
+**5. Enable auto-start on login (one time)**
 
-**One-time setup:**
-
-Once `python run.py` is running and `/start` works, open Telegram and send this to your bot:
-
+In Telegram, send to your bot:
 ```
 /daemon install
 ```
 
-> This is a **Telegram message** sent to your bot — not a terminal command.
+> This is a **Telegram message** to your bot — not a terminal command.
 
-Done. From the next login onward, the bot starts automatically in the background (no console window).
+Done. From now on the bot starts automatically at every login. You never need to run `start.bat` again.
 
-To undo — send in Telegram: `/daemon uninstall`  
-To check — send in Telegram: `/daemon status`
+To stop auto-start — send `/daemon uninstall` in Telegram  
+To check status — send `/daemon status` in Telegram
 
-> **How it works:** `/daemon install` registers a Windows Task Scheduler task (`onlogon` trigger). On login, Windows silently runs `run.vbs` → `run.bat` → the bot. Logs go to `unicontroller.log` in the project root.
+> **How it works:** `start.bat` calls `run.vbs` via `wscript.exe`, which launches the bot with no console window and exits immediately. `/daemon install` registers a Windows Task Scheduler task that fires `run.vbs` at every login automatically. Logs go to `unicontroller.log` in the project root.
 
 ---
 
