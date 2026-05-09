@@ -35,7 +35,7 @@ async def netstat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await msg.edit_text("no active connections.")
         return
 
-    lines = ["🌐 <b>Active Connections</b>\n<pre>"]
+    lines = ["<b>NETSTAT</b>\n<pre>"]
     for proc, ips in sorted(rows.items())[:12]:
         ip_list = '  '.join(list(ips)[:3])
         lines.append(f"{proc[:18]:<18}  {ip_list}")

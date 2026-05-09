@@ -25,7 +25,7 @@ async def volume(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not context.args:
         vol = get_volume()
         await update.message.reply_text(
-            f"🔊 Volume: <b>{vol:.0f}%</b>  {bar(vol)}",
+            f"vol: <b>{vol:.0f}%</b>  {bar(vol)}",
             parse_mode=ParseMode.HTML
         )
         return
@@ -38,19 +38,19 @@ async def volume(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             set_volume(max(0, int(get_volume()) - 10))
         elif arg == 'mute':
             mute_toggle()
-            await update.message.reply_text("🔇 Muted.")
+            await update.message.reply_text("muted.")
             return
         else:
             set_volume(int(arg))
         vol = get_volume()
         await update.message.reply_text(
-            f"🔊 Volume: <b>{vol:.0f}%</b>  {bar(vol)}",
+            f"vol: <b>{vol:.0f}%</b>  {bar(vol)}",
             parse_mode=ParseMode.HTML
         )
     except ValueError:
         await update.message.reply_text("usage: /volume &lt;0-100 | up | down | mute&gt;", parse_mode=ParseMode.HTML)
     except Exception as e:
-        await update.message.reply_text(f"❌ {e}")
+        await update.message.reply_text(f"err: {e}")
 
 
 async def launch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -63,22 +63,22 @@ async def launch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = ' '.join(context.args)
     apps = list_apps()
     if not apps:
-        await update.message.reply_text("❌ No installed apps found.")
+        await update.message.reply_text("no installed apps found.")
         return
 
     names = [a[0] for a in apps]
     match = process.extractOne(query, names, scorer=fuzz.WRatio)
     if match is None or match[1] < 40:
-        await update.message.reply_text(f"❌ No app matching '{query}'")
+        await update.message.reply_text(f"no app matching '{query}'")
         return
 
     matched_name, score, idx = match
     app_path = apps[idx][1]
     try:
         launch_app(app_path)
-        await update.message.reply_text(f"🚀 Launched <b>{matched_name}</b>", parse_mode=ParseMode.HTML)
+        await update.message.reply_text(f"launched: <b>{matched_name}</b>", parse_mode=ParseMode.HTML)
     except Exception as e:
-        await update.message.reply_text(f"❌ {e}")
+        await update.message.reply_text(f"err: {e}")
 
 
 async def focus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -101,16 +101,13 @@ async def focus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             pass
 
     chat_id = update.effective_chat.id
-    killed_str = f"\n🚫 Closed: {', '.join(set(killed))}" if killed else ""
+    killed_str = f"  closed: {', '.join(set(killed))}" if killed else ""
 
     async def _done(ctx):
-        await ctx.bot.send_message(chat_id, "🎯 Focus session complete!")
+        await ctx.bot.send_message(chat_id, "focus session complete.")
 
     context.job_queue.run_once(_done, when=minutes * 60)
-    await update.message.reply_text(
-        f"🎯 <b>Focus mode</b>  {minutes}m{killed_str}",
-        parse_mode=ParseMode.HTML
-    )
+    await update.message.reply_text(f"focus: {minutes}m{killed_str}")
 
 
 async def type_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -121,13 +118,13 @@ async def type_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     text = ' '.join(context.args)
     await asyncio.to_thread(type_text, text)
-    await update.message.reply_text(f"⌨️ Typed: <code>{text[:80]}</code>", parse_mode=ParseMode.HTML)
+    await update.message.reply_text(f"typed: <code>{text[:80]}</code>", parse_mode=ParseMode.HTML)
 
 
 async def speedtest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
-    msg = await update.message.reply_text("🌐 Running speed test... (~20s)")
+    msg = await update.message.reply_text("running speed test... (~20s)")
     try:
         import speedtest as st_lib
 
@@ -140,14 +137,14 @@ async def speedtest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
         r = await asyncio.to_thread(_run)
         text = (
-            "🌐 <b>Speed Test</b>\n\n"
-            f"⬇️ Download  <b>{r.download / 1_000_000:.1f} Mbps</b>\n"
-            f"⬆️ Upload    <b>{r.upload   / 1_000_000:.1f} Mbps</b>\n"
-            f"🏓 Ping      <b>{r.ping:.0f} ms</b>\n"
-            f"📍 Server    {r.server['name']}, {r.server['country']}"
+            "<b>SPEEDTEST</b>\n\n"
+            f"down    <b>{r.download / 1_000_000:.1f} Mbps</b>\n"
+            f"up      <b>{r.upload   / 1_000_000:.1f} Mbps</b>\n"
+            f"ping    <b>{r.ping:.0f} ms</b>\n"
+            f"server  {r.server['name']}, {r.server['country']}"
         )
     except Exception as e:
-        text = f"❌ Speed test failed: {e}"
+        text = f"speed test failed: {e}"
     await msg.edit_text(text, parse_mode=ParseMode.HTML)
 
 

@@ -29,16 +29,16 @@ def terminal_keyboard() -> InlineKeyboardMarkup:
     ])
 
 
-HELP_TEXT = """🖥 <b>UniController</b>
+HELP_TEXT = """<b>UNICONTROLLER</b>
 
-<b>🔧 Core</b>
+<b>CORE</b>
 /exec &lt;cmd&gt; - run any shell command
 /screenshot - capture the screen
 /runp - interactive Python REPL
 
-<b>📊 System</b>
+<b>SYSTEM</b>
 /sysinfo - CPU, RAM, disk, uptime
-/ps - running processes + kill buttons
+/ps - processes with kill buttons
 /kill &lt;pid|name&gt; - kill a process
 /lock - lock the screen
 /shutdown - shut down PC
@@ -47,7 +47,7 @@ HELP_TEXT = """🖥 <b>UniController</b>
 /powerplan - view or switch power plan
 /windows - list and manage open windows
 
-<b>📁 Files</b>
+<b>FILES</b>
 /files - browse the filesystem
 /download - browse or send a file
 /upload - save a file from chat to PC
@@ -55,62 +55,62 @@ HELP_TEXT = """🖥 <b>UniController</b>
 /cleanup - scan and free up junk space
 /search &lt;pattern&gt; - search file contents
 
-<b>📋 Clipboard</b>
+<b>CLIPBOARD</b>
 /clip - read clipboard
 /clip set &lt;text&gt; - write to clipboard
 /clip history - last 10 items
 
-<b>🎵 Media</b>
+<b>MEDIA</b>
 /media - play, pause, skip, volume panel
 /volume - get or set system volume
 /nowplaying - current track info
 
-<b>🚀 Apps</b>
+<b>APPS</b>
 /launch &lt;name&gt; - open any app
 /focus &lt;min&gt; - block distractions for N minutes
 /type &lt;text&gt; - type text into active window
 /speedtest - internet speed test
 
-<b>⏰ Scheduler</b>
+<b>SCHEDULER</b>
 /schedule &lt;time&gt; &lt;cmd&gt; - run a command at a time
 /babysit &lt;cmd&gt; - run and notify when done
 /wake &lt;mac&gt; - send Wake-on-LAN packet
 
-<b>🌐 Network</b>
+<b>NETWORK</b>
 /netstat - active connections by process
 /lan - scan LAN for devices
 
-<b>🎮 Remote</b>
+<b>REMOTE</b>
 /next /prev - arrow keys (slide nav)
 /fullscreen /escape - F5 / Esc
 /openurl &lt;url&gt; - open URL in browser
 /closetab - close current tab
 
-<b>📝 Notepad</b>
+<b>NOTEPAD</b>
 /note &lt;text&gt; - save a note
 /notes - list all notes
 
-<b>👁 Watchers</b>
+<b>WATCHERS</b>
 /watch &lt;rule&gt; - monitor cpu, ram, disk, process, file
 /watches - list active rules
 /unwatch &lt;id&gt; - remove a rule
 
-<b>📈 Reports</b>
+<b>REPORTS</b>
 /report now - instant snapshot
 /report on HH:MM - schedule daily report
 /report off - cancel daily report
 
-<b>🎬 Timelapse</b>
+<b>TIMELAPSE</b>
 /timelapse &lt;duration&gt; - record screen as GIF
 /stream - short burst GIF capture
 /stage &lt;path&gt; - upload file for offline access
 
-<b>🛡 Guardian</b>
+<b>GUARDIAN</b>
 /snap - take a webcam snapshot
 /guard on|off|status - motion + USB alerts
 /panic - snap, lock, disable Wi-Fi
 
-<b>⚙️ Daemon</b>
+<b>DAEMON</b>
 /daemon install|uninstall|status - auto-start on login"""
 
 
@@ -124,7 +124,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
     await update.message.reply_text(
-        f"👋 Hey <b>{update.effective_user.first_name}</b>, your PC is online!\n\n/help to see all commands.",
+        f"<b>{update.effective_user.first_name}</b>  PC online.\n/help for commands.",
         parse_mode=ParseMode.HTML
     )
 

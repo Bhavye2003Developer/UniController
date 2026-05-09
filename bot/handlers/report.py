@@ -22,14 +22,14 @@ def _build_report() -> str:
         bat = None
 
     lines = [
-        f"📊 <b>Report</b>  {datetime.date.today()}\n",
-        f"💻 CPU   <b>{cpu:.0f}%</b>  {bar(cpu)}",
-        f"🧠 RAM   <b>{ram.percent:.0f}%</b>  {bar(ram.percent)}  {ram.used//1024**3}/{ram.total//1024**3} GB",
-        f"💾 Disk  <b>{disk.percent:.0f}%</b>  {bar(disk.percent)}  {disk.free//1024**3} GB free",
+        f"<b>REPORT</b>  {datetime.date.today()}\n",
+        f"cpu   <b>{cpu:.0f}%</b>  {bar(cpu)}",
+        f"ram   <b>{ram.percent:.0f}%</b>  {bar(ram.percent)}  {ram.used//1024**3}/{ram.total//1024**3} GB",
+        f"disk  <b>{disk.percent:.0f}%</b>  {bar(disk.percent)}  {disk.free//1024**3} GB free",
     ]
     if bat:
-        plug = "  🔌 charging" if bat.power_plugged else ""
-        lines.append(f"🔋 Bat   <b>{bat.percent:.0f}%</b>  {bar(bat.percent)}{plug}")
+        plug = "  charging" if bat.power_plugged else ""
+        lines.append(f"bat   <b>{bat.percent:.0f}%</b>  {bar(bat.percent)}{plug}")
     return "\n".join(lines)
 
 
@@ -64,7 +64,7 @@ async def report_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
         context.job_queue.run_daily(_daily, time=schedule_time, name=_REPORT_JOB)
         await update.message.reply_text(
-            f"📊 Daily report scheduled at <b>{schedule_time.strftime('%H:%M')}</b>",
+            f"daily report set for <b>{schedule_time.strftime('%H:%M')}</b>",
             parse_mode=ParseMode.HTML
         )
         return
@@ -75,7 +75,7 @@ async def report_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             job.schedule_removal()
             removed += 1
         await update.message.reply_text(
-            "📊 Daily report cancelled." if removed else "No daily report was scheduled."
+            "daily report off." if removed else "no daily report was scheduled."
         )
         return
 
@@ -90,7 +90,7 @@ async def send_session_summary(bot, chat_id: int, idle_secs: float) -> None:
     h, rem = divmod(int(idle_secs), 3600)
     m = rem // 60
     away = f"{h}h {m}m" if h else f"{m}m"
-    lines = [f"👋 <b>Welcome back!</b>  (away {away})\n"]
+    lines = [f"<b>BACK</b>  away {away}\n"]
     for ts, text in events:
         t = datetime.datetime.fromtimestamp(ts).strftime('%H:%M')
         lines.append(f"  {t}  {text}")
