@@ -38,6 +38,8 @@ Send commands to your PC from anywhere via a private Telegram bot.
 ## Setup
 
 ```bash
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
