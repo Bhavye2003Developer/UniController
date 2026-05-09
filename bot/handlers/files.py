@@ -44,7 +44,6 @@ async def _show_dir(message, context, path: Path) -> None:
         if item.is_dir():
             lines.append(f"{i+1:2}.  {name}/")
         else:
-            from utils.windows_utils import fmt_size
             size_str = fmt_size(item.stat().st_size)
             lines.append(f"{i+1:2}.  {name:<40}  {size_str:>8}")
     lines.append("</pre>")

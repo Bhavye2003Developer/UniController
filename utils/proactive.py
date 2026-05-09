@@ -54,7 +54,7 @@ class ProactiveMonitor:
                         eta = ""
                         if b.secsleft and b.secsleft > 0:
                             eta = f" · ~{b.secsleft // 60}m left"
-                        msg = f"⚠️ Battery at {b.percent:.0f}%{eta} — plug in or /shutdown?"
+                        msg = f"⚠️ Battery at {b.percent:.0f}%{eta}. plug in or /shutdown?"
                         session.log_event(f"Battery low: {b.percent:.0f}%")
                         self._send(msg)
                     elif b.percent > 20:

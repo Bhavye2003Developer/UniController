@@ -67,7 +67,7 @@ def main() -> None:
     register_timelapse_handlers(app)
     register_watch_handlers(app)
     register_windows_handlers(app)
-    # Core last — MessageHandler catch-all must come after all CommandHandlers
+    # Core last: MessageHandler catch-all must come after all CommandHandlers
     register_core_handlers(app)
 
     app.run_polling()
