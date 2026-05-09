@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 import psutil
@@ -7,7 +8,7 @@ from telegram.constants import ParseMode
 from telegram.ext import CommandHandler, ContextTypes
 
 from bot.handlers.core import is_authorized
-from utils.windows_utils import get_volume, launch_app, list_apps, mute_toggle, set_volume
+from utils.windows_utils import get_volume, launch_app, list_apps, mute_toggle, set_volume, type_text
 from utils import daemon as daemon_util
 
 FOCUS_BLOCKLIST = [
@@ -103,6 +104,47 @@ async def focus(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+async def type_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    if not context.args:
+        await update.message.reply_text("Usage: /type <text to type>")
+        return
+    text = ' '.join(context.args)
+    await asyncio.to_thread(type_text, text)
+    await update.message.reply_text(f"⌨️ Typed: {text}")
+
+
+async def speedtest_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    msg = await update.message.reply_text("⏳ Running speed test… (~20s)")
+    try:
+        import speedtest as st_lib
+
+        def _run():
+            s = st_lib.Speedtest()
+            s.get_best_server()
+            s.download()
+            s.upload()
+            return s.results
+
+        results = await asyncio.to_thread(_run)
+        down = results.download / 1_000_000
+        up = results.upload / 1_000_000
+        ping = results.ping
+        srv = results.server
+        text = (
+            f"⬇️ Download: {down:.1f} Mbps\n"
+            f"⬆️ Upload:   {up:.1f} Mbps\n"
+            f"📶 Ping:     {ping:.0f} ms\n"
+            f"🌍 Server:   {srv['name']}, {srv['country']}"
+        )
+    except Exception as e:
+        text = f"Speed test failed: {e}"
+    await msg.edit_text(text)
+
+
 async def daemon(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
@@ -119,7 +161,9 @@ async def daemon(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 def register_misc_handlers(app) -> None:
-    app.add_handler(CommandHandler("volume", volume))
-    app.add_handler(CommandHandler("launch", launch))
-    app.add_handler(CommandHandler("focus",  focus))
-    app.add_handler(CommandHandler("daemon", daemon))
+    app.add_handler(CommandHandler("volume",     volume))
+    app.add_handler(CommandHandler("launch",     launch))
+    app.add_handler(CommandHandler("focus",      focus))
+    app.add_handler(CommandHandler("type",       type_cmd))
+    app.add_handler(CommandHandler("speedtest",  speedtest_cmd))
+    app.add_handler(CommandHandler("daemon",     daemon))

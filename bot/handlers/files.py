@@ -1,10 +1,13 @@
+import asyncio
 import os
+import tempfile
 from pathlib import Path
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from bot.handlers.core import is_authorized
+from utils.windows_utils import print_file
 
 UPLOAD_DEFAULT_PATH = os.getenv('UPLOAD_DEFAULT_PATH', str(Path.home() / 'Downloads'))
 _ROOT = Path(os.path.abspath(os.sep))
@@ -129,8 +132,31 @@ async def upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(f"✅ Saved to {dest}")
 
 
+async def print_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    reply = update.message.reply_to_message
+    doc = reply.document if reply else None
+    if doc is None:
+        await update.message.reply_text(
+            "Reply to a document with /print to print it on the PC's default printer."
+        )
+        return
+    suffix = Path(doc.file_name).suffix if doc.file_name else '.pdf'
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp_path = tmp.name
+    file_obj = await context.bot.get_file(doc.file_id)
+    await file_obj.download_to_drive(tmp_path)
+    try:
+        await asyncio.to_thread(print_file, tmp_path)
+        await update.message.reply_text(f"🖨️ Sent to printer: {doc.file_name}")
+    except Exception as e:
+        await update.message.reply_text(f"Print failed: {e}")
+
+
 def register_files_handlers(app) -> None:
     app.add_handler(CommandHandler("files",    files))
     app.add_handler(CommandHandler("download", download))
     app.add_handler(CommandHandler("upload",   upload))
+    app.add_handler(CommandHandler("print",    print_cmd))
     app.add_handler(CallbackQueryHandler(nav_callback, pattern="^nav_"))

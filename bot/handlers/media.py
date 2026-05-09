@@ -1,8 +1,10 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
+import asyncio
+
 from bot.handlers.core import is_authorized
-from utils.windows_utils import get_volume, press_media_key
+from utils.windows_utils import get_nowplaying, get_volume, press_media_key
 
 _MEDIA_KEYBOARD = InlineKeyboardMarkup([
     [
@@ -58,6 +60,14 @@ async def media_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await query.answer(f"Error: {e}", show_alert=True)
 
 
+async def nowplaying(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    info = await asyncio.to_thread(get_nowplaying)
+    await update.message.reply_text(f"🎵 {info}")
+
+
 def register_media_handlers(app) -> None:
-    app.add_handler(CommandHandler("media", media))
+    app.add_handler(CommandHandler("media",      media))
+    app.add_handler(CommandHandler("nowplaying", nowplaying))
     app.add_handler(CallbackQueryHandler(media_callback, pattern="^media_"))

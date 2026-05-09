@@ -33,33 +33,40 @@ HELP_TEXT = """<b>UniController Commands</b>
 
 <b>Core</b>
 /exec &lt;cmd&gt; — run shell command
-/screenshot — capture screen
+/screenshot [n|all] — capture screen / monitor n / all
 /runp — start Python REPL
 
 <b>System</b>
-/sysinfo — CPU, RAM, disk
+/sysinfo — CPU, RAM, disk, uptime
 /ps — list processes
-/kill &lt;pid&gt; — kill process
+/kill &lt;pid|name&gt; — kill process
 /lock — lock screen
 /shutdown — shutdown PC
 /restart — restart PC
+/activewindow — active window + process info
+/powerplan [name] — show or switch power plan
 
 <b>Files</b>
 /files — browse filesystem
-/download &lt;path&gt; — send file to chat
+/download — file browser / send file to chat
 /upload — receive file from chat
+/print — print document (reply to file)
 
 <b>Clipboard</b>
 /clip get — read clipboard
-/clip set &lt;text&gt; — write clipboard
+/clip set — write clipboard (reply to message)
+/clip history — last 10 clipboard items
 
 <b>Media</b>
 /media — media control panel
-/volume &lt;0-100&gt; — set volume
+/volume &lt;0-100|up|down|mute&gt; — set volume
+/nowplaying — current track info
 
 <b>Apps</b>
 /launch &lt;name&gt; — open app by name
 /focus &lt;minutes&gt; — block distractions
+/type &lt;text&gt; — type into active window
+/speedtest — internet speed test
 
 <b>Daemon</b>
 /daemon install — auto-start on login
@@ -96,9 +103,22 @@ async def run_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
+    arg = (context.args[0].lower() if context.args else '1')
     buf = BytesIO()
     with mss.mss() as sct:
-        monitor = sct.monitors[1]
+        if arg == 'all':
+            monitor = sct.monitors[0]
+        else:
+            try:
+                idx = int(arg)
+            except ValueError:
+                idx = 1
+            if idx < 1 or idx >= len(sct.monitors):
+                await update.message.reply_text(
+                    f"Monitor {idx} not found. Available: 1–{len(sct.monitors) - 1}"
+                )
+                return
+            monitor = sct.monitors[idx]
         img = sct.grab(monitor)
         pil_img = Image.frombytes("RGB", img.size, img.bgra, "raw", "BGRX")
         pil_img.save(buf, format="PNG")

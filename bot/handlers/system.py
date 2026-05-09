@@ -9,7 +9,7 @@ from telegram.constants import ParseMode
 from telegram.ext import CallbackQueryHandler, CommandHandler, ContextTypes
 
 from bot.handlers.core import is_authorized
-from utils.windows_utils import lock_screen
+from utils.windows_utils import get_active_window, get_powerplans, lock_screen, set_powerplan
 
 _pending_shutdown: set[int] = set()
 _pending_restart: set[int] = set()
@@ -145,11 +145,54 @@ async def restart_confirm(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     subprocess.run(['shutdown', '/r', '/t', '3'])
 
 
+async def activewindow(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    info = get_active_window()
+    msg = (
+        f"🪟 <b>{info['title']}</b>\n"
+        f"Process: {info['name']}\n"
+        f"Memory:  {info['mem_mb']} MB\n"
+        f"Running: {info['runtime']}"
+    )
+    await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+
+async def powerplan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not is_authorized(update):
+        return
+    plans = get_powerplans()
+    if not context.args:
+        lines = ["⚡ <b>Power Plans</b>", ""]
+        for name, _, active in plans:
+            marker = "●" if active else "○"
+            lines.append(f"{marker} {name}")
+        lines.append("\nUsage: /powerplan &lt;name&gt;")
+        await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.HTML)
+        return
+
+    query = ' '.join(context.args).lower()
+    match = next(
+        ((name, guid) for name, guid, _ in plans if query in name.lower()),
+        None
+    )
+    if match is None:
+        await update.message.reply_text(f"No plan matching '{query}'.")
+        return
+    try:
+        set_powerplan(match[1])
+        await update.message.reply_text(f"⚡ Switched to: {match[0]}")
+    except Exception as e:
+        await update.message.reply_text(f"Failed: {e}")
+
+
 def register_system_handlers(app) -> None:
-    app.add_handler(CommandHandler("sysinfo",  sysinfo))
-    app.add_handler(CommandHandler("ps",       ps))
-    app.add_handler(CommandHandler("kill",     kill_cmd))
-    app.add_handler(CommandHandler("lock",     lock))
-    app.add_handler(CommandHandler("shutdown", shutdown))
-    app.add_handler(CommandHandler("restart",  restart))
+    app.add_handler(CommandHandler("sysinfo",      sysinfo))
+    app.add_handler(CommandHandler("ps",           ps))
+    app.add_handler(CommandHandler("kill",         kill_cmd))
+    app.add_handler(CommandHandler("lock",         lock))
+    app.add_handler(CommandHandler("shutdown",     shutdown))
+    app.add_handler(CommandHandler("restart",      restart))
+    app.add_handler(CommandHandler("activewindow", activewindow))
+    app.add_handler(CommandHandler("powerplan",    powerplan))
     app.add_handler(CallbackQueryHandler(kill_pid_callback, pattern="^killpid_"))
