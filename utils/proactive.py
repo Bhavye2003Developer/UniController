@@ -6,6 +6,8 @@ from pathlib import Path
 
 import psutil
 
+from utils import session
+
 INBOX  = Path.home() / 'UniController' / 'inbox'
 OUTBOX = Path.home() / 'UniController' / 'outbox'
 
@@ -52,10 +54,9 @@ class ProactiveMonitor:
                         eta = ""
                         if b.secsleft and b.secsleft > 0:
                             eta = f" · ~{b.secsleft // 60}m left"
-                        self._send(
-                            f"⚠️ Battery at {b.percent:.0f}%{eta}\n"
-                            f"Plug in or /shutdown now?"
-                        )
+                        msg = f"⚠️ Battery at {b.percent:.0f}%{eta} — plug in or /shutdown?"
+                        session.log_event(f"Battery low: {b.percent:.0f}%")
+                        self._send(msg)
                     elif b.percent > 20:
                         alerted = False
             except Exception:
@@ -83,6 +84,7 @@ class ProactiveMonitor:
                     if size == last and size > 0:
                         from utils.windows_utils import fmt_size
                         self._send(f"📥 Download complete: {f.name} ({fmt_size(size)})")
+                        session.log_event(f"Download complete: {f.name}")
                         completed.append(f)
                     else:
                         pending[f] = size
@@ -102,6 +104,7 @@ class ProactiveMonitor:
                 current = {f for f in OUTBOX.glob('*') if f.is_file()}
                 for f in current - known:
                     self._send_file(f)
+                    session.log_event(f"Outbox sent: {f.name}")
                     time.sleep(0.5)
                     shutil.move(str(f), str(sent_dir / f.name))
                 known = {f for f in OUTBOX.glob('*') if f.is_file()}

@@ -98,6 +98,21 @@ HELP_TEXT = """<b>UniController Commands</b>
 /daemon uninstall — remove auto-start
 /daemon status — check startup status
 
+<b>Watchers</b>
+/watch &lt;rule&gt; — add a watch rule (cpu/ram/disk/process/file)
+/watches — list active watch rules
+/unwatch &lt;id&gt; — remove a watch rule
+
+<b>Reports</b>
+/report now — instant system snapshot
+/report on HH:MM — schedule daily report
+/report off — cancel daily report
+
+<b>Timelapse / Stage</b>
+/timelapse &lt;duration&gt; [interval=Xm] — record screen timelapse GIF
+/stream [seconds] — burst screen capture GIF (5–60s)
+/stage &lt;path&gt; — upload file to Telegram for offline access
+
 <b>Guardian</b>
 /snap — webcam snapshot
 /guard — toggle motion/USB/login alerts
@@ -196,6 +211,15 @@ async def terminal_button(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not is_authorized(update):
         return
+
+    from utils import session as _session
+    idle = _session.touch()
+    if idle > 1800:
+        from bot.handlers.report import send_session_summary
+        import asyncio
+        asyncio.create_task(
+            send_session_summary(context.bot, update.effective_chat.id, idle)
+        )
 
     text = (update.message.text or '').strip().lower()
 

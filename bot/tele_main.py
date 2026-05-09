@@ -17,9 +17,12 @@ from bot.handlers.misc import register_misc_handlers
 from bot.handlers.network import register_network_handlers
 from bot.handlers.notepad import register_notepad_handlers
 from bot.handlers.remote import register_remote_handlers
+from bot.handlers.report import register_report_handlers
 from bot.handlers.scheduler import register_scheduler_handlers
 from bot.handlers.search import register_search_handlers
 from bot.handlers.system import register_system_handlers
+from bot.handlers.timelapse import register_timelapse_handlers
+from bot.handlers.watch_handler import register_watch_handlers
 from bot.handlers.windows_mgr import register_windows_handlers
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -33,9 +36,11 @@ logging.basicConfig(
 
 async def _post_init(app: Application) -> None:
     from utils.proactive import ProactiveMonitor
+    from utils.watch_engine import _engine
     loop = asyncio.get_running_loop()
     monitor = ProactiveMonitor(app.bot, ALLOWED_USER_ID, loop)
     monitor.start()
+    _engine.init(app.bot, loop)
 
 
 def main() -> None:
@@ -56,8 +61,11 @@ def main() -> None:
     register_network_handlers(app)
     register_notepad_handlers(app)
     register_remote_handlers(app)
+    register_report_handlers(app)
     register_scheduler_handlers(app)
     register_search_handlers(app)
+    register_timelapse_handlers(app)
+    register_watch_handlers(app)
     register_windows_handlers(app)
     # Core last — MessageHandler catch-all must come after all CommandHandlers
     register_core_handlers(app)
